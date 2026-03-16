@@ -19,7 +19,7 @@ public class JellyTile : MonoBehaviour
 
     void Awake()
     {
-        sr = GetComponent<SpriteRenderer>();
+        sr = GetComponentInChildren<SpriteRenderer>();
     }
 
     public void Init(int x, int y, int id)

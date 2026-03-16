@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3af3b5e05cda9ea469d02b85e52a989a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JellyTile
-  colorID: 0
+  colorID: 1
   gridX: 0
   gridY: 0
 --- !u!212 &9160015558904754372
