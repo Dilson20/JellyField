@@ -1,8 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance;
+
+    [Header("Grid Density")]
+    [Range(0, 42)] public int minBlankTiles = 5;       // guaranteed empty slots
+    [Range(0f, 1f)] public float jellyDensity = 0.8f;  // 1.0 = full, 0.0 = all blank
 
     [Header("Grid Settings")]
     public int columns = 6;
@@ -26,48 +31,47 @@ public class GridManager : MonoBehaviour
     void GenerateGrid()
     {
         SpawnBackgroundTiles();
-        grid = new JellyTile[columns, rows];
-        isBlank = new bool[columns, rows];
 
-        float totalWidth = columns * (tileSize + tileSpacing) - tileSpacing;
-        float totalHeight = rows * (tileSize + tileSpacing) - tileSpacing;
-        float startX = -totalWidth / 2f + tileSize / 2f;
-        float startY = -totalHeight / 2f + tileSize / 2f;
+        int total = columns * rows;
 
+        // Build a list of all cell positions and shuffle it
+        var positions = new List<Vector2Int>();
         for (int x = 0; x < columns; x++)
-        {
             for (int y = 0; y < rows; y++)
+                positions.Add(new Vector2Int(x, y));
+
+        Shuffle(positions);
+
+        // Calculate how many tiles to actually fill
+        int maxFromDensity = Mathf.RoundToInt(total * jellyDensity);
+        int forcedBlanks = Mathf.Clamp(minBlankTiles, 0, total);
+        int fillCount = Mathf.Clamp(maxFromDensity, 0, total - forcedBlanks);
+
+        for (int i = 0; i < positions.Count; i++)
+        {
+            int x = positions[i].x;
+            int y = positions[i].y;
+
+            if (i < fillCount)
             {
-                float posX = startX + x * (tileSize + tileSpacing);
-                float posY = startY + y * (tileSize + tileSpacing);
-
-                bool blank = Random.value < 0.15f;
-                isBlank[x, y] = blank;
-
-                if (blank)
-                {
-                    if (blankTilePrefab != null)
-                    {
-                        GameObject b = Instantiate(blankTilePrefab,
-                            new Vector3(posX, posY, 0), Quaternion.identity);
-                        b.transform.SetParent(this.transform);
-                        b.name = $"Blank_{x}_{y}";
-                    }
-                    grid[x, y] = null;
-                }
-                else
-                {
-                    GameObject obj = Instantiate(tilePrefab,
-                        new Vector3(posX, posY, 0), Quaternion.identity);
-                    obj.transform.SetParent(this.transform);
-                    obj.name = $"Tile_{x}_{y}";
-
-                    JellyTile tile = obj.GetComponent<JellyTile>();
-                    tile.Init(x, y);
-                    tile.isInteractable = false; // grid tiles are fixed
-                    grid[x, y] = tile;
-                }
+                // Spawn a jelly tile
+                Vector3 worldPos = GridToWorld(x, y);
+                var go = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
+                var tile = go.GetComponent<JellyTile>();
+                tile.Init(x, y);
+                tile.isInteractable = false;
+                tiles[x, y] = tile;
             }
+            // else: leave the cell empty (blank background already placed)
+        }
+    }
+
+    void Shuffle(List<Vector2Int> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
         }
     }
 
