@@ -261,40 +261,58 @@ public class JellyTile : MonoBehaviour
 
     public void TryExpandToFullTile()
     {
-        // Collect all active quadrant colors
-        int activeColor = -1;
+        int color = -1;
+
+        // Path 1: all 4 quadrants explicitly the same color
+        color = quadrantColors[0];
+        if (color >= 0)
+        {
+            bool allSame = true;
+            for (int i = 1; i < 4; i++)
+                if (quadrantColors[i] != color) { allSame = false; break; }
+            if (allSame) { PromoteToFull(color); return; }
+        }
+
+        // Path 2: exactly 2 quadrants active, same color, MUTUALLY PARTNERED,
+        //         and the other 2 slots are empty (-1)
+        //         This is the 2-size bar + 2 empty slots → 4-size case
+        int p1 = -1, p2 = -1;
+        color = -1;
         for (int i = 0; i < 4; i++)
         {
             if (quadrantColors[i] < 0) continue;
-            if (activeColor == -1) activeColor = quadrantColors[i];
-            else if (quadrantColors[i] != activeColor) return; // different colors, don't expand
+            if (color == -1) { color = quadrantColors[i]; p1 = i; }
+            else if (quadrantColors[i] == color && p2 == -1) p2 = i;
+            else return; // 3+ active or mixed colors
         }
 
-        if (activeColor == -1) return; // all empty
+        if (color == -1 || p1 == -1 || p2 == -1) return; // 0 or 1 active quad
 
-        // Check at least 1 quadrant is active
-        bool anyActive = false;
+        // The other 2 must be empty
         for (int i = 0; i < 4; i++)
-            if (quadrantColors[i] >= 0) { anyActive = true; break; }
-        if (!anyActive) return;
+            if (i != p1 && i != p2 && quadrantColors[i] != -1) return;
 
-        // All active quadrants same color — expand Q0 to full tile
-        // Hide all others
+        // p1 and p2 must be mutually partnered (a real 2-size bar, not two solos)
+        if (mergePartner[p1] != p2 || mergePartner[p2] != p1) return;
+
+        PromoteToFull(color);
+    }
+
+    void PromoteToFull(int color)
+    {
         for (int i = 1; i < 4; i++)
         {
             quadrantRenderers[i].gameObject.SetActive(false);
             displayedBy[i] = 0;
             mergePartner[i] = 0;
-            quadrantColors[i] = activeColor;
+            quadrantColors[i] = color;
         }
-        mergePartner[0] = -1; // Q0 represents all
-
-        // Expand Q0 to full tile size
-        quadrantRenderers[0].transform.localPosition = new Vector3(0f, 0f, 0);
+        mergePartner[0] = -1;
+        quadrantRenderers[0].transform.localPosition = Vector3.zero;
         quadrantRenderers[0].transform.localScale = new Vector3(0.96f, 0.96f, 1);
-        quadrantRenderers[0].color = JellyColors[activeColor];
+        quadrantRenderers[0].color = JellyColors[color];
         quadrantRenderers[0].gameObject.SetActive(true);
-        quadrantColors[0] = activeColor;
+        quadrantColors[0] = color;
     }
 
     // ── Add this helper coroutine anywhere in JellyTile ──────────────────────
