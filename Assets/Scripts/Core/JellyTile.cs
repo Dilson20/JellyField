@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class JellyTile : MonoBehaviour
 {
@@ -195,7 +196,6 @@ public class JellyTile : MonoBehaviour
             quadrantRenderers[other].gameObject.SetActive(true);
             break;
         }
-        TryExpandToFullTile();
     }
 
     void RestoreQuadrantVisual(int index)
@@ -259,7 +259,7 @@ public class JellyTile : MonoBehaviour
         return quadrantColors[0] >= 0;
     }
 
-    void TryExpandToFullTile()
+    public void TryExpandToFullTile()
     {
         // Collect all active quadrant colors
         int activeColor = -1;
