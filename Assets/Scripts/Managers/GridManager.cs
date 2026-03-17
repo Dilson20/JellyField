@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -30,6 +30,12 @@ public class GridManager : MonoBehaviour
 
     void GenerateGrid()
     {
+        grid = new JellyTile[columns, rows];
+        isBlank = new bool[columns, rows];
+        for (int x = 0; x < columns; x++)
+            for (int y = 0; y < rows; y++)
+                isBlank[x, y] = true;
+
         SpawnBackgroundTiles();
 
         int total = columns * rows;
@@ -60,7 +66,7 @@ public class GridManager : MonoBehaviour
                 var tile = go.GetComponent<JellyTile>();
                 tile.Init(x, y);
                 tile.isInteractable = false;
-                tiles[x, y] = tile;
+                grid[x, y] = tile;
             }
             // else: leave the cell empty (blank background already placed)
         }
@@ -143,7 +149,7 @@ public class GridManager : MonoBehaviour
         }
         else
         {
-            // Snap back � hand tiles return to tray, grid tiles return to grid
+            // Snap back — hand tiles return to tray, grid tiles return to grid
             tile.transform.position = (fromHand && HandManager.Instance != null)
                 ? HandManager.Instance.GetSlotPosition(tile.handSlotIndex)
                 : GridToWorld(ox, oy);
