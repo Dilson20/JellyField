@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class JellyTile : MonoBehaviour
 {
+    public bool isInteractable = false;
+    [HideInInspector] public int handSlotIndex = -1;
     public int gridX;
     public int gridY;
     public int[] quadrantColors = new int[4];
@@ -10,6 +12,7 @@ public class JellyTile : MonoBehaviour
     private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
     private int[] displayedBy = new int[] { 0, 1, 2, 3 };
     private int[] mergePartner = { -1, -1, -1, -1 };
+    [SerializeField] public static float AnimSpeed = 0.4f; // 1=normal, 2=2x faster, 0.5=slower
     private Coroutine[] quadrantAnimCoroutines = new Coroutine[4];
 
     public static readonly Color[] JellyColors = new Color[]
@@ -343,7 +346,7 @@ public class JellyTile : MonoBehaviour
         StopQuadrantAnim(displayIdx);
         var tr = quadrantRenderers[displayIdx].transform;
         Vector3 from = tr.localScale;
-        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateAndHide(tr, from, Vector3.zero, 0.12f, go));
+        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateAndHide(tr, from, Vector3.zero, 0.12f / AnimSpeed, go));
     }
 
     IEnumerator AnimateAndHide(Transform tr, Vector3 from, Vector3 to,
@@ -363,7 +366,7 @@ public class JellyTile : MonoBehaviour
         var tr = quadrantRenderers[displayIdx].transform;
         quadrantRenderers[displayIdx].gameObject.SetActive(true);
         tr.localScale = Vector3.zero;
-        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateScale(tr, Vector3.zero, targetScale, 0.18f));
+        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateScale(tr, Vector3.zero, targetScale, 0.18f / AnimSpeed));
     }
 
     // ── Replace the scale set in TryExpandToFullTile ──────────────────────────
@@ -374,6 +377,6 @@ public class JellyTile : MonoBehaviour
         for (int i = 0; i < 4; i++) StopQuadrantAnim(i);
         var tr = quadrantRenderers[0].transform;
         Vector3 from = tr.localScale * 0.75f;
-        quadrantAnimCoroutines[0] = StartCoroutine(AnimateScale(tr, from, new Vector3(0.96f, 0.96f, 1f), 0.2f));
+        quadrantAnimCoroutines[0] = StartCoroutine(AnimateScale(tr, from, new Vector3(0.96f, 0.96f, 1f), 0.2f / AnimSpeed));
     }
 }

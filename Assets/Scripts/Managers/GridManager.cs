@@ -63,6 +63,7 @@ public class GridManager : MonoBehaviour
 
                     JellyTile tile = obj.GetComponent<JellyTile>();
                     tile.Init(x, y);
+                    tile.isInteractable = false; // grid tiles are fixed
                     grid[x, y] = tile;
                 }
             }
@@ -101,52 +102,48 @@ public class GridManager : MonoBehaviour
     {
         int ox = tile.gridX;
         int oy = tile.gridY;
+        bool fromHand = (ox < 0 || oy < 0);
 
-        // Find the nearest blank cell to drop position
         int bestX = -1, bestY = -1;
         float bestDist = float.MaxValue;
-
         for (int x = 0; x < columns; x++)
-        {
             for (int y = 0; y < rows; y++)
             {
                 if (!isBlank[x, y]) continue;
-
-                Vector3 cellWorld = GridToWorld(x, y);
-                float dist = Vector2.Distance(releaseWorldPos,
-                             new Vector2(cellWorld.x, cellWorld.y));
-
-                if (dist < bestDist)
-                {
-                    bestDist = dist;
-                    bestX = x;
-                    bestY = y;
-                }
+                Vector3 cw = GridToWorld(x, y);
+                float d = Vector2.Distance(releaseWorldPos, new Vector2(cw.x, cw.y));
+                if (d < bestDist) { bestDist = d; bestX = x; bestY = y; }
             }
-        }
 
-        // Only snap if close enough (within 1 tile distance)
-        float snapThreshold = tileSize + tileSpacing;
-
-        if (bestX != -1 && bestDist < snapThreshold)
+        if (bestX != -1 && bestDist < tileSize + tileSpacing)
         {
-            grid[ox, oy] = null;
-            isBlank[ox, oy] = true;
+            if (!fromHand) { grid[ox, oy] = null; isBlank[ox, oy] = true; }
+
             isBlank[bestX, bestY] = false;
             grid[bestX, bestY] = tile;
-
             tile.gridX = bestX;
             tile.gridY = bestY;
             tile.transform.position = GridToWorld(bestX, bestY);
+
+            if (fromHand)
+            {
+                int prevSlot = tile.handSlotIndex;
+                tile.isInteractable = false;
+                tile.handSlotIndex = -1;
+                HandManager.Instance?.OnHandTilePlaced(prevSlot);
+            }
+
             tile.OnDrop();
             MergeManager.Instance.CheckMerges(tile);
         }
         else
         {
-            // Snap back
-            tile.transform.position = GridToWorld(ox, oy);
+            // Snap back — hand tiles return to tray, grid tiles return to grid
+            tile.transform.position = (fromHand && HandManager.Instance != null)
+                ? HandManager.Instance.GetSlotPosition(tile.handSlotIndex)
+                : GridToWorld(ox, oy);
             tile.OnDrop();
-            MergeManager.Instance.CheckMerges(tile);
+            if (!fromHand) MergeManager.Instance.CheckMerges(tile);
         }
     }
 

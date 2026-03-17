@@ -7,6 +7,8 @@ public class MergeManager : MonoBehaviour
     public static MergeManager Instance;
     void Awake() { Instance = this; }
 
+    public bool enableChainMerge = true;
+
     private static readonly int[] RightOurs = { 1, 3 };
     private static readonly int[] RightTheirs = { 0, 2 };
     private static readonly int[] LeftOurs = { 0, 2 };
@@ -18,17 +20,17 @@ public class MergeManager : MonoBehaviour
 
     public void CheckMerges(JellyTile placedTile)
     {
-        StartCoroutine(DoMerge(placedTile));
+        StartCoroutine(DoMerge(placedTile, false));
     }
 
-    IEnumerator DoMerge(JellyTile tile)
+    IEnumerator DoMerge(JellyTile tile, bool isChain)
     {
-        yield return new WaitForSeconds(0.15f);
+        // Chain merges use a shorter delay for snappier feel
+        yield return new WaitForSeconds(isChain ? (0.1f / JellyTile.AnimSpeed) : (0.15f / JellyTile.AnimSpeed));
         if (tile == null) yield break;
 
         GridManager gm = GridManager.Instance;
 
-        // Store (tile, quadrant, SNAPSHOT COLOR) so we never double-clear after expansion refills a slot
         var merges = new List<(JellyTile ourTile, int ourQ, int ourColor, JellyTile theirTile, int theirQ, int theirColor)>();
         CollectMerges(tile, gm, 1, 0, RightOurs, RightTheirs, merges);
         CollectMerges(tile, gm, -1, 0, LeftOurs, LeftTheirs, merges);
@@ -40,8 +42,6 @@ public class MergeManager : MonoBehaviour
         var affected = new HashSet<JellyTile>();
         foreach (var (ourTile, ourQ, ourColor, theirTile, theirQ, theirColor) in merges)
         {
-            // ✅ Only clear if the quadrant STILL holds the exact color that was matched
-            // This prevents double-clearing when ExpandNeighborIntoCleared refills a slot
             if (ourTile != null && ourTile.quadrantColors[ourQ] == ourColor)
                 ourTile.ClearQuadrant(ourQ);
             if (theirTile != null && theirTile.quadrantColors[theirQ] == theirColor)
@@ -57,13 +57,44 @@ public class MergeManager : MonoBehaviour
             if (t != null && !t.IsFullyEmpty())
                 t.TryExpandToFullTile();
 
+        // ── Collect survivors before destroying ───────────────────────────
+        var survivors = new HashSet<JellyTile>();
         foreach (var t in affected)
-            CheckAndDestroyEmpty(t, gm);
+        {
+            if (t == null) continue;
+            if (t.IsFullyEmpty())
+                CheckAndDestroyEmpty(t, gm);
+            else
+                survivors.Add(t);
+        }
+
+        // ── Chain merge: re-check all surviving tiles and their neighbors ─
+        if (enableChainMerge)
+        {
+            var chainTargets = new HashSet<JellyTile>();
+            foreach (var t in survivors)
+            {
+                if (t == null) continue;
+                chainTargets.Add(t);
+                // Also check neighbors so they can react to newly-freed slots
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        if (dx == 0 && dy == 0) continue;
+                        if (dx != 0 && dy != 0) continue; // cardinal only
+                        var nb = gm.GetTile(t.gridX + dx, t.gridY + dy);
+                        if (nb != null) chainTargets.Add(nb);
+                    }
+            }
+            foreach (var t in chainTargets)
+                if (t != null && !t.IsFullyEmpty())
+                    StartCoroutine(DoMerge(t, true));
+        }
     }
 
     void CollectMerges(JellyTile tile, GridManager gm, int dx, int dy,
-                   int[] ourQuads, int[] theirQuads,
-                   List<(JellyTile, int, int, JellyTile, int, int)> merges)
+                       int[] ourQuads, int[] theirQuads,
+                       List<(JellyTile, int, int, JellyTile, int, int)> merges)
     {
         JellyTile neighbor = gm.GetTile(tile.gridX + dx, tile.gridY + dy);
         if (neighbor == null) return;

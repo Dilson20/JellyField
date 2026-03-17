@@ -51,7 +51,7 @@ public class InputHandler : MonoBehaviour
         if (hit.collider != null)
         {
             JellyTile tile = hit.collider.GetComponent<JellyTile>();
-            if (tile != null)
+            if (tile != null && tile.isInteractable)
             {
                 selectedTile = tile;
                 dragStartPos = worldPos;
