@@ -211,4 +211,10 @@ public class JellyTile : MonoBehaviour
         quadrantColors[quadrant] = colorID;
         quadrantRenderers[quadrant].color = JellyColors[colorID];
     }
+
+    public void ClearQuadrant(int index)
+    {
+        quadrantColors[index] = -1;
+        quadrantRenderers[index].gameObject.SetActive(false);
+    }
 }

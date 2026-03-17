@@ -91,7 +91,7 @@ public class InputHandler : MonoBehaviour
 
         GridManager.Instance.TryMoveToPosition(selectedTile, worldPos);
 
-        StartCoroutine(ResumeIdle(selectedTile));
+        //StartCoroutine(ResumeIdle(selectedTile));
         ResetInput();
     }
 

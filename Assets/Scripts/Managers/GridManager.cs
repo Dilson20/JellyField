@@ -76,8 +76,10 @@ public class GridManager : MonoBehaviour
         float startX = -totalWidth / 2f;
         float startY = -totalHeight / 2f;
 
-        gx = Mathf.RoundToInt((worldPos.x - startX) / (tileSize + tileSpacing));
-        gy = Mathf.RoundToInt((worldPos.y - startY) / (tileSize + tileSpacing));
+        gx = Mathf.FloorToInt((worldPos.x - startX + (tileSize + tileSpacing) / 2f)
+             / (tileSize + tileSpacing));
+        gy = Mathf.FloorToInt((worldPos.y - startY + (tileSize + tileSpacing) / 2f)
+             / (tileSize + tileSpacing));
 
         return gx >= 0 && gx < columns && gy >= 0 && gy < rows;
     }
@@ -97,56 +99,68 @@ public class GridManager : MonoBehaviour
 
     public void TryMoveToPosition(JellyTile tile, Vector2 releaseWorldPos)
     {
-        if (!WorldToGrid(releaseWorldPos, out int tx, out int ty))
-        {
-            tile.transform.position = GridToWorld(tile.gridX, tile.gridY);
-            tile.OnDrop();
-            return;
-        }
-
         int ox = tile.gridX;
         int oy = tile.gridY;
 
-        if (tx == ox && ty == oy)
+        // Find the nearest blank cell to drop position
+        int bestX = -1, bestY = -1;
+        float bestDist = float.MaxValue;
+
+        for (int x = 0; x < columns; x++)
         {
-            tile.transform.position = GridToWorld(ox, oy);
-            tile.OnDrop();
-            return;
+            for (int y = 0; y < rows; y++)
+            {
+                if (!isBlank[x, y]) continue;
+
+                Vector3 cellWorld = GridToWorld(x, y);
+                float dist = Vector2.Distance(releaseWorldPos,
+                             new Vector2(cellWorld.x, cellWorld.y));
+
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestX = x;
+                    bestY = y;
+                }
+            }
         }
 
-        JellyTile target = grid[tx, ty];
+        // Only snap if close enough (within 1 tile distance)
+        float snapThreshold = tileSize + tileSpacing;
 
-        if (isBlank[tx, ty])
+        if (bestX != -1 && bestDist < snapThreshold)
         {
             grid[ox, oy] = null;
             isBlank[ox, oy] = true;
-            isBlank[tx, ty] = false;
-            grid[tx, ty] = tile;
+            isBlank[bestX, bestY] = false;
+            grid[bestX, bestY] = tile;
 
-            tile.gridX = tx;
-            tile.gridY = ty;
-            tile.transform.position = GridToWorld(tx, ty);
+            tile.gridX = bestX;
+            tile.gridY = bestY;
+            tile.transform.position = GridToWorld(bestX, bestY);
             tile.OnDrop();
-        }
-        else if (target != null)
-        {
-            grid[ox, oy] = target;
-            grid[tx, ty] = tile;
-
-            target.gridX = ox; target.gridY = oy;
-            tile.gridX = tx; tile.gridY = ty;
-
-            target.transform.position = GridToWorld(ox, oy);
-            tile.transform.position = GridToWorld(tx, ty);
-
-            tile.OnDrop();
-            target.OnSwap();
+            MergeManager.Instance.CheckMerges(tile);
         }
         else
         {
+            // Snap back
             tile.transform.position = GridToWorld(ox, oy);
             tile.OnDrop();
+            MergeManager.Instance.CheckMerges(tile);
         }
+    }
+
+    public JellyTile GetTile(int x, int y)
+    {
+        if (x < 0 || x >= columns || y < 0 || y >= rows) return null;
+        return grid[x, y];
+    }
+
+    public void RemoveTile(int x, int y)
+    {
+        if (x < 0 || x >= columns || y < 0 || y >= rows) return;
+        grid[x, y] = null;
+        isBlank[x, y] = true;
     }
 
     void CenterCamera()
