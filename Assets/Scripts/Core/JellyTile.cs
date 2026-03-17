@@ -56,19 +56,17 @@ public class JellyTile : MonoBehaviour
 
     public void Init(int x, int y)
     {
-        gridX = x;
-        gridY = y;
+        gridX = x; gridY = y;
         ResetAllQuadrants();
 
         int layout = Random.Range(0, 3);
-
         if (layout == 0)
         {
             AssignAllUnique();
         }
         else if (layout == 1)
         {
-            int topColor = Random.Range(0, JellyColors.Length);
+            int topColor = PickColor();
             int botColor = PickDifferentFrom(topColor);
             quadrantColors[0] = topColor; quadrantColors[1] = topColor;
             quadrantColors[2] = botColor; quadrantColors[3] = botColor;
@@ -77,16 +75,19 @@ public class JellyTile : MonoBehaviour
         }
         else
         {
-            int leftColor = Random.Range(0, JellyColors.Length);
+            int leftColor = PickColor();
             int rightColor = PickDifferentFrom(leftColor);
             quadrantColors[0] = leftColor; quadrantColors[2] = leftColor;
             quadrantColors[1] = rightColor; quadrantColors[3] = rightColor;
             ApplyMerge(2, leftColor);
             ApplyMerge(3, rightColor);
         }
-
-        //OnIdle();
     }
+
+    int PickColor() =>
+        LevelManager.Instance?.levelData != null
+            ? LevelManager.Instance.levelData.GetWeightedRandomColor()
+            : Random.Range(0, JellyColors.Length);
 
     void ResetAllQuadrants()
     {
@@ -225,12 +226,23 @@ public class JellyTile : MonoBehaviour
 
     void AssignAllUnique()
     {
-        int[] available = { 0, 1, 2, 3, 4 };
-        Shuffle(available);
+        // Pick 4 distinct colors using weighted random
+        var picked = new System.Collections.Generic.List<int>();
+        int attempts = 0;
+        while (picked.Count < 4 && attempts < 50)
+        {
+            int c = PickColor();
+            if (!picked.Contains(c)) picked.Add(c);
+            attempts++;
+        }
+        // Fill remaining if weights prevented 4 unique
+        for (int c = 0; c < 5 && picked.Count < 4; c++)
+            if (!picked.Contains(c)) picked.Add(c);
+
         for (int i = 0; i < 4; i++)
         {
-            quadrantColors[i] = available[i];
-            quadrantRenderers[i].color = JellyColors[available[i]];
+            quadrantColors[i] = picked[i];
+            quadrantRenderers[i].color = JellyColors[picked[i]];
             quadrantRenderers[i].gameObject.SetActive(true);
         }
     }

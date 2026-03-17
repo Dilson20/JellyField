@@ -51,6 +51,7 @@ public class MergeManager : MonoBehaviour
             theirTile.OnSwap();
             affected.Add(ourTile);
             affected.Add(theirTile);
+            LevelManager.Instance?.RegisterMerge(ourColor);
         }
 
         SoundManager.Instance?.PlayMerge();
