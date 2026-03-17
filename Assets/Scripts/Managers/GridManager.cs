@@ -25,6 +25,7 @@ public class GridManager : MonoBehaviour
 
     void GenerateGrid()
     {
+        SpawnBackgroundTiles();
         grid = new JellyTile[columns, rows];
         isBlank = new bool[columns, rows];
 
@@ -144,6 +145,22 @@ public class GridManager : MonoBehaviour
                 : GridToWorld(ox, oy);
             tile.OnDrop();
             if (!fromHand) MergeManager.Instance.CheckMerges(tile);
+        }
+    }
+
+    void SpawnBackgroundTiles()
+    {
+        if (blankTilePrefab == null) return;
+        for (int x = 0; x < columns; x++)
+        {
+            for (int y = 0; y < rows; y++)
+            {
+                Vector3 pos = GridToWorld(x, y);
+                pos.z = 0.5f; // render behind jelly tiles
+                var bg = Instantiate(blankTilePrefab, pos, Quaternion.identity, transform);
+                bg.name = $"BG_{x}_{y}";
+                bg.transform.localScale = new Vector3(tileSize, tileSize, 1f);
+            }
         }
     }
 

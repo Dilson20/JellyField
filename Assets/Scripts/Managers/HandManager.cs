@@ -44,7 +44,7 @@ public class HandManager : MonoBehaviour
             slotPositions[i] = new Vector3(startX + i * handStep, handY, 0); // ← updated
             SpawnSlot(i);
         }
-
+        SpawnHandBackgrounds(gm);
         CreatePanel(new Vector3(0, handY, 0.1f), totalW + handStep * 0.4f, gm.tileSize + step * 0.35f); // ← updated
     }
 
@@ -102,5 +102,20 @@ public class HandManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.35f / JellyTile.AnimSpeed);
         if (this != null && gameObject != null) SpawnSlot(i);
+    }
+
+    void SpawnHandBackgrounds(GridManager gm)
+    {
+        var blankPrefab = gm.blankTilePrefab;
+        if (blankPrefab == null) return;
+
+        for (int i = 0; i < handSize; i++)
+        {
+            Vector3 pos = slotPositions[i];
+            pos.z = 0.5f;
+            var bg = Instantiate(blankPrefab, pos, Quaternion.identity, transform);
+            bg.name = $"HandBG_{i}";
+            bg.transform.localScale = new Vector3(gm.tileSize, gm.tileSize, 1f);
+        }
     }
 }
