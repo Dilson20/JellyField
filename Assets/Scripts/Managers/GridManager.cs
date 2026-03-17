@@ -10,10 +10,10 @@ public class GridManager : MonoBehaviour
     public float tileSize = 0.9f;
     public float tileSpacing = 0.05f;
     public GameObject tilePrefab;
-    public GameObject blankTilePrefab; // assign in Inspector
+    public GameObject blankTilePrefab;
 
     private JellyTile[,] grid;
-    private bool[,] isBlank; // tracks which cells are blank
+    private bool[,] isBlank;
 
     void Awake() { Instance = this; }
 
@@ -40,13 +40,11 @@ public class GridManager : MonoBehaviour
                 float posX = startX + x * (tileSize + tileSpacing);
                 float posY = startY + y * (tileSize + tileSpacing);
 
-                // 15% chance of blank tile
                 bool blank = Random.value < 0.15f;
                 isBlank[x, y] = blank;
 
                 if (blank)
                 {
-                    // Spawn blank visual if prefab assigned
                     if (blankTilePrefab != null)
                     {
                         GameObject b = Instantiate(blankTilePrefab,
@@ -71,7 +69,6 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    // Convert world position to grid coords
     public bool WorldToGrid(Vector2 worldPos, out int gx, out int gy)
     {
         float totalWidth = columns * (tileSize + tileSpacing) - tileSpacing;
@@ -85,7 +82,6 @@ public class GridManager : MonoBehaviour
         return gx >= 0 && gx < columns && gy >= 0 && gy < rows;
     }
 
-    // Get world position of a grid cell
     public Vector3 GridToWorld(int gx, int gy)
     {
         float totalWidth = columns * (tileSize + tileSpacing) - tileSpacing;
@@ -103,7 +99,6 @@ public class GridManager : MonoBehaviour
     {
         if (!WorldToGrid(releaseWorldPos, out int tx, out int ty))
         {
-            // Out of bounds — snap back
             tile.transform.position = GridToWorld(tile.gridX, tile.gridY);
             tile.OnDrop();
             return;
@@ -112,7 +107,6 @@ public class GridManager : MonoBehaviour
         int ox = tile.gridX;
         int oy = tile.gridY;
 
-        // Same cell — snap back
         if (tx == ox && ty == oy)
         {
             tile.transform.position = GridToWorld(ox, oy);
@@ -124,7 +118,6 @@ public class GridManager : MonoBehaviour
 
         if (isBlank[tx, ty])
         {
-            // Move to blank cell
             grid[ox, oy] = null;
             isBlank[ox, oy] = true;
             isBlank[tx, ty] = false;
@@ -137,7 +130,6 @@ public class GridManager : MonoBehaviour
         }
         else if (target != null)
         {
-            // Swap with existing tile
             grid[ox, oy] = target;
             grid[tx, ty] = tile;
 
@@ -152,7 +144,6 @@ public class GridManager : MonoBehaviour
         }
         else
         {
-            // Snap back if something unexpected
             tile.transform.position = GridToWorld(ox, oy);
             tile.OnDrop();
         }

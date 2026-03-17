@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,8 +9,6 @@ public class InputHandler : MonoBehaviour
     private Vector2 dragStartPos;
     private Vector3 tileOriginalPos;
     private bool isDragging;
-
-    private float dragLift = 0.1f; // scale up slightly when dragging
     private Vector3 originalScale;
 
     void Start()
@@ -60,10 +59,10 @@ public class InputHandler : MonoBehaviour
                 originalScale = tile.transform.localScale;
                 isDragging = true;
 
-                // Lift tile above others
                 selectedTile.transform.localScale = originalScale * 1.1f;
                 SetSortingOrder(selectedTile, 10);
                 selectedTile.OnPickup();
+                selectedTile.OnDrag();
             }
         }
     }
@@ -73,12 +72,12 @@ public class InputHandler : MonoBehaviour
         if (selectedTile == null) return;
         Vector2 worldPos = mainCam.ScreenToWorldPoint(screenPos);
 
-        // Smoothly follow finger
         selectedTile.transform.position = Vector3.Lerp(
             selectedTile.transform.position,
             new Vector3(worldPos.x, worldPos.y, 0),
-            0.3f
-        );
+            0.3f);
+
+        selectedTile.OnDrag();
     }
 
     void OnPointerUp(Vector2 screenPos)
@@ -96,10 +95,10 @@ public class InputHandler : MonoBehaviour
         ResetInput();
     }
 
-    void AnimateToPosition(JellyTile tile, Vector3 target)
+    IEnumerator ResumeIdle(JellyTile tile)
     {
-        // Simple immediate snap — we'll add tweening in jiggle phase
-        tile.transform.position = target;
+        yield return new WaitForSeconds(0.4f);
+        if (tile != null) tile.OnIdle();
     }
 
     void SetSortingOrder(JellyTile tile, int order)
@@ -114,5 +113,3 @@ public class InputHandler : MonoBehaviour
         isDragging = false;
     }
 }
-
-public enum Direction { Up, Down, Left, Right }
