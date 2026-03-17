@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class MergeManager : MonoBehaviour
@@ -38,8 +38,8 @@ public class MergeManager : MonoBehaviour
     }
 
     void TryMergeDirection(JellyTile tile, GridManager gm,
-                           int dx, int dy,
-                           int[] ourQuads, int[] theirQuads)
+                       int dx, int dy,
+                       int[] ourQuads, int[] theirQuads)
     {
         int nx = tile.gridX + dx;
         int ny = tile.gridY + dy;
@@ -47,24 +47,29 @@ public class MergeManager : MonoBehaviour
         JellyTile neighbor = gm.GetTile(nx, ny);
         if (neighbor == null) return;
 
+        // ✅ Snapshot ALL match decisions BEFORE any ClearQuadrant calls
+        bool[] shouldMerge = new bool[ourQuads.Length];
         for (int i = 0; i < ourQuads.Length; i++)
         {
-            int oq = ourQuads[i];
-            int tq = theirQuads[i];
+            int ourColor = tile.quadrantColors[ourQuads[i]];
+            int theirColor = neighbor.quadrantColors[theirQuads[i]];
+            shouldMerge[i] = ourColor >= 0 && theirColor >= 0 && ourColor == theirColor;
+        }
 
-            int ourColor = tile.quadrantColors[oq];
-            int theirColor = neighbor.quadrantColors[tq];
+        // Now execute clears based on the snapshot
+        for (int i = 0; i < ourQuads.Length; i++)
+        {
+            if (!shouldMerge[i]) continue;
 
-            if (ourColor >= 0 && theirColor >= 0 && ourColor == theirColor)
-            {
-                tile.ClearQuadrant(oq);
-                neighbor.ClearQuadrant(tq);
+            // Guard: partner-clear from a previous iteration may have already cleared this
+            if (tile.quadrantColors[ourQuads[i]] >= 0)
+                tile.ClearQuadrant(ourQuads[i]);
+            if (neighbor.quadrantColors[theirQuads[i]] >= 0)
+                neighbor.ClearQuadrant(theirQuads[i]);
 
-                tile.OnSwap();
-                neighbor.OnSwap();
-
-                CheckAndDestroyEmpty(neighbor, gm);
-            }
+            tile.OnSwap();
+            neighbor.OnSwap();
+            CheckAndDestroyEmpty(neighbor, gm);
         }
     }
 
