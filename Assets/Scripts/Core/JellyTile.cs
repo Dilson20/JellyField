@@ -261,10 +261,8 @@ public class JellyTile : MonoBehaviour
 
     public void TryExpandToFullTile()
     {
-        int color = -1;
-
         // Path 1: all 4 quadrants explicitly the same color
-        color = quadrantColors[0];
+        int color = quadrantColors[0];
         if (color >= 0)
         {
             bool allSame = true;
@@ -273,9 +271,7 @@ public class JellyTile : MonoBehaviour
             if (allSame) { PromoteToFull(color); return; }
         }
 
-        // Path 2: exactly 2 quadrants active, same color, MUTUALLY PARTNERED,
-        //         and the other 2 slots are empty (-1)
-        //         This is the 2-size bar + 2 empty slots → 4-size case
+        // Path 2: exactly 2 active quadrants, same color, other 2 empty
         int p1 = -1, p2 = -1;
         color = -1;
         for (int i = 0; i < 4; i++)
@@ -283,18 +279,16 @@ public class JellyTile : MonoBehaviour
             if (quadrantColors[i] < 0) continue;
             if (color == -1) { color = quadrantColors[i]; p1 = i; }
             else if (quadrantColors[i] == color && p2 == -1) p2 = i;
-            else return; // 3+ active or mixed colors
+            else return; // 3+ active or mixed colors → abort
         }
 
         if (color == -1 || p1 == -1 || p2 == -1) return; // 0 or 1 active quad
 
-        // The other 2 must be empty
+        // The other 2 must be empty (-1)
         for (int i = 0; i < 4; i++)
             if (i != p1 && i != p2 && quadrantColors[i] != -1) return;
 
-        // p1 and p2 must be mutually partnered (a real 2-size bar, not two solos)
-        if (mergePartner[p1] != p2 || mergePartner[p2] != p1) return;
-
+        // ✅ Removed partner check — 2 same-color quads + 2 empty always = valid 4-size
         PromoteToFull(color);
     }
 
