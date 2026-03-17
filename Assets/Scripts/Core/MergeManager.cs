@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public class MergeManager : MonoBehaviour
 {
     public static MergeManager Instance;
+    public int GetMergePartner(int index) => mergePartner[index];
 
     void Awake() { Instance = this; }
 

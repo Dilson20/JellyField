@@ -6,6 +6,9 @@ public class JellyTile : MonoBehaviour
     public int gridY;
     public int[] quadrantColors = new int[4];
     private JiggleEffect jiggle;
+    private int[] displayedBy = new int[] { 0, 1, 2, 3 };
+    private int[] mergePartner = { -1, -1, -1, -1 };
+
 
     private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
 
@@ -89,6 +92,9 @@ public class JellyTile : MonoBehaviour
 
     void ResetAllQuadrants()
     {
+        mergePartner = new int[] { -1, -1, -1, -1 };
+        displayedBy = new int[] { 0, 1, 2, 3 };
+
         // Q0 top-left
         quadrantRenderers[0].transform.localPosition = new Vector3(-0.25f, 0.25f, 0);
         quadrantRenderers[0].transform.localScale = new Vector3(0.48f, 0.48f, 1);
@@ -112,31 +118,21 @@ public class JellyTile : MonoBehaviour
         int a = pair[0];
         int b = pair[1];
 
+        mergePartner[a] = b; // track partners
+        mergePartner[b] = a;
+
         quadrantRenderers[b].gameObject.SetActive(false);
         quadrantColors[b] = color;
+        displayedBy[b] = a;
 
         Transform t = quadrantRenderers[a].transform;
-
         switch (pairIndex)
         {
-            case 0: // top horizontal Q0+Q1
-                t.localPosition = new Vector3(0f, 0.25f, 0);
-                t.localScale = new Vector3(0.96f, 0.48f, 1);
-                break;
-            case 1: // bottom horizontal Q2+Q3
-                t.localPosition = new Vector3(0f, -0.25f, 0);
-                t.localScale = new Vector3(0.96f, 0.48f, 1);
-                break;
-            case 2: // left vertical Q0+Q2
-                t.localPosition = new Vector3(-0.25f, 0f, 0);
-                t.localScale = new Vector3(0.48f, 0.96f, 1);
-                break;
-            case 3: // right vertical Q1+Q3
-                t.localPosition = new Vector3(0.25f, 0f, 0);
-                t.localScale = new Vector3(0.48f, 0.96f, 1);
-                break;
+            case 0: t.localPosition = new Vector3(0f, 0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
+            case 1: t.localPosition = new Vector3(0f, -0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
+            case 2: t.localPosition = new Vector3(-0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
+            case 3: t.localPosition = new Vector3(0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
         }
-
         quadrantRenderers[a].color = JellyColors[color];
         quadrantRenderers[a].gameObject.SetActive(true);
     }
@@ -214,7 +210,74 @@ public class JellyTile : MonoBehaviour
 
     public void ClearQuadrant(int index)
     {
+        int partner = mergePartner[index];
+
+        // Clear this quadrant
         quadrantColors[index] = -1;
-        quadrantRenderers[index].gameObject.SetActive(false);
+        mergePartner[index] = -1;
+        int displayIdx = displayedBy[index];
+        RestoreQuadrantVisual(displayIdx);
+        quadrantRenderers[displayIdx].gameObject.SetActive(false);
+        displayedBy[index] = index;
+
+        if (partner >= 0 && quadrantColors[partner] >= 0)
+        {
+            // Feature 1 — 2-size block disappears entirely
+            quadrantColors[partner] = -1;
+            mergePartner[partner] = -1;
+            int partnerDisplay = displayedBy[partner];
+            RestoreQuadrantVisual(partnerDisplay);
+            quadrantRenderers[partnerDisplay].gameObject.SetActive(false);
+            displayedBy[partner] = partner;
+        }
+        else
+        {
+            // Feature 2 — expand adjacent quadrant into cleared space
+            ExpandNeighborIntoCleared(index);
+        }
+    }
+
+    void ExpandNeighborIntoCleared(int clearedIndex)
+    {
+        for (int p = 0; p < MergePairs.Length; p++)
+        {
+            int[] pair = MergePairs[p];
+            int other = -1;
+            if (pair[0] == clearedIndex) other = pair[1];
+            else if (pair[1] == clearedIndex) other = pair[0];
+
+            if (other < 0) continue;
+            if (quadrantColors[other] < 0) continue;  // other is empty
+            if (mergePartner[other] >= 0) continue;   // already merged
+
+            // Expand 'other' to fill both spots
+            mergePartner[other] = clearedIndex;
+            displayedBy[clearedIndex] = other;
+            quadrantColors[clearedIndex] = quadrantColors[other];
+
+            Transform t = quadrantRenderers[other].transform;
+            switch (p)
+            {
+                case 0: t.localPosition = new Vector3(0f, 0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
+                case 1: t.localPosition = new Vector3(0f, -0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
+                case 2: t.localPosition = new Vector3(-0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
+                case 3: t.localPosition = new Vector3(0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
+            }
+            quadrantRenderers[other].color = JellyColors[quadrantColors[other]];
+            quadrantRenderers[other].gameObject.SetActive(true);
+            break; // only expand one neighbor
+        }
+    }
+
+    void RestoreQuadrantVisual(int index)
+    {
+        Vector3[] positions = {
+        new Vector3(-0.25f,  0.25f, 0),
+        new Vector3( 0.25f,  0.25f, 0),
+        new Vector3(-0.25f, -0.25f, 0),
+        new Vector3( 0.25f, -0.25f, 0)
+    };
+        quadrantRenderers[index].transform.localPosition = positions[index];
+        quadrantRenderers[index].transform.localScale = new Vector3(0.48f, 0.48f, 1);
     }
 }
