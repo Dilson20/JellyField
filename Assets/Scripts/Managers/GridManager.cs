@@ -38,9 +38,9 @@ public class GridManager : MonoBehaviour
                 obj.transform.SetParent(this.transform);
                 obj.name = $"Tile_{x}_{y}";
 
-                int randomColor = Random.Range(0, JellyTile.JellyColors.Length);
+                
                 JellyTile tile = obj.GetComponent<JellyTile>();
-                tile.Init(x, y, randomColor);
+                tile.Init(x, y);
 
                 grid[x, y] = tile;
             }
