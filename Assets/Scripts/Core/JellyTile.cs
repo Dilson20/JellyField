@@ -173,7 +173,15 @@ public class JellyTile : MonoBehaviour
             if (mergePartner[other] >= 0) continue;
             if (displayedBy[other] != other) continue;
 
+            // ✅ Fix 1: Clear any dangling references from other quads pointing to 'other'
+            //    (e.g. Q3 still thinks Q2 is its partner after Q2 was solo'd by a previous clear)
+            for (int i = 0; i < 4; i++)
+                if (i != other && mergePartner[i] == other)
+                    mergePartner[i] = -1;
+
+            // ✅ Fix 2: Set BOTH sides of the partnership (was only setting one side)
             mergePartner[other] = clearedIndex;
+            mergePartner[clearedIndex] = other;
             displayedBy[clearedIndex] = other;
             quadrantColors[clearedIndex] = quadrantColors[other];
 
