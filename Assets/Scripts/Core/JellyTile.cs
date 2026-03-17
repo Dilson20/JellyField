@@ -10,6 +10,7 @@ public class JellyTile : MonoBehaviour
     private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
     private int[] displayedBy = new int[] { 0, 1, 2, 3 };
     private int[] mergePartner = { -1, -1, -1, -1 };
+    private Coroutine[] quadrantAnimCoroutines = new Coroutine[4];
 
     public static readonly Color[] JellyColors = new Color[]
     {
@@ -128,41 +129,34 @@ public class JellyTile : MonoBehaviour
                 mergePartner[i] = -1;
                 displayedBy[i] = i;
                 RestoreQuadrantVisual(i);
-                quadrantRenderers[i].gameObject.SetActive(false);
+                AnimateOut(i);
             }
             return;
         }
 
         int partner = mergePartner[index];
-
-        // Clear this quadrant visually
         quadrantColors[index] = -1;
         mergePartner[index] = -1;
         int displayIdx = displayedBy[index];
         RestoreQuadrantVisual(displayIdx);
-        quadrantRenderers[displayIdx].gameObject.SetActive(false);
+        AnimateOut(displayIdx);
         displayedBy[index] = index;
 
         if (partner >= 0 && quadrantColors[partner] >= 0)
         {
-            // Both were merged — clear partner too (2-size block disappears entirely)
             quadrantColors[partner] = -1;
             mergePartner[partner] = -1;
             int partnerDisplay = displayedBy[partner];
             RestoreQuadrantVisual(partnerDisplay);
-            quadrantRenderers[partnerDisplay].gameObject.SetActive(false);
+            AnimateOut(partnerDisplay);
             displayedBy[partner] = partner;
-
-            // Give remaining quadrants a chance to expand into both freed slots
             ExpandNeighborIntoCleared(index);
             ExpandNeighborIntoCleared(partner);
         }
         else
         {
-            // Solo quadrant cleared — expand an adjacent partner into the space
             ExpandNeighborIntoCleared(index);
         }
-        TryExpandToFullTile();
     }
 
     void ExpandNeighborIntoCleared(int clearedIndex)
@@ -179,21 +173,21 @@ public class JellyTile : MonoBehaviour
             if (mergePartner[other] >= 0) continue;
             if (displayedBy[other] != other) continue;
 
-            // Expand other to cover the cleared slot
             mergePartner[other] = clearedIndex;
             displayedBy[clearedIndex] = other;
             quadrantColors[clearedIndex] = quadrantColors[other];
 
-            Transform t = quadrantRenderers[other].transform;
+            Vector3 targetPos, targetScale;
             switch (p)
             {
-                case 0: t.localPosition = new Vector3(0f, 0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
-                case 1: t.localPosition = new Vector3(0f, -0.25f, 0); t.localScale = new Vector3(0.96f, 0.48f, 1); break;
-                case 2: t.localPosition = new Vector3(-0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
-                case 3: t.localPosition = new Vector3(0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
+                case 0: targetPos = new Vector3(0f, 0.25f, 0); targetScale = new Vector3(0.96f, 0.48f, 1); break;
+                case 1: targetPos = new Vector3(0f, -0.25f, 0); targetScale = new Vector3(0.96f, 0.48f, 1); break;
+                case 2: targetPos = new Vector3(-0.25f, 0f, 0); targetScale = new Vector3(0.48f, 0.96f, 1); break;
+                default: targetPos = new Vector3(0.25f, 0f, 0); targetScale = new Vector3(0.48f, 0.96f, 1); break;
             }
+            quadrantRenderers[other].transform.localPosition = targetPos;
             quadrantRenderers[other].color = JellyColors[quadrantColors[other]];
-            quadrantRenderers[other].gameObject.SetActive(true);
+            AnimateExpandIn(other, targetScale);
             break;
         }
     }
@@ -294,19 +288,24 @@ public class JellyTile : MonoBehaviour
 
     void PromoteToFull(int color)
     {
-        for (int i = 1; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
-            quadrantRenderers[i].gameObject.SetActive(false);
-            displayedBy[i] = 0;
-            mergePartner[i] = 0;
+            displayedBy[i] = 0;          // ✅ reset ALL including [0]
             quadrantColors[i] = color;
+            mergePartner[i] = (i == 0) ? -1 : 0;
+            if (i > 0) quadrantRenderers[i].gameObject.SetActive(false);
         }
-        mergePartner[0] = -1;
         quadrantRenderers[0].transform.localPosition = Vector3.zero;
-        quadrantRenderers[0].transform.localScale = new Vector3(0.96f, 0.96f, 1);
         quadrantRenderers[0].color = JellyColors[color];
         quadrantRenderers[0].gameObject.SetActive(true);
-        quadrantColors[0] = color;
+        AnimateFullExpand();
+    }
+
+    void StopQuadrantAnim(int idx)
+    {
+        if (quadrantAnimCoroutines[idx] != null)
+            StopCoroutine(quadrantAnimCoroutines[idx]);
+        quadrantAnimCoroutines[idx] = null;
     }
 
     // ── Add this helper coroutine anywhere in JellyTile ──────────────────────
@@ -331,10 +330,12 @@ public class JellyTile : MonoBehaviour
     // Use:
     void AnimateOut(int displayIdx)
     {
+        var go = quadrantRenderers[displayIdx].gameObject;
+        if (!go.activeSelf) return;
+        StopQuadrantAnim(displayIdx);
         var tr = quadrantRenderers[displayIdx].transform;
-        Vector3 current = tr.localScale;
-        StartCoroutine(AnimateAndHide(tr, current, Vector3.zero, 0.12f,
-            quadrantRenderers[displayIdx].gameObject));
+        Vector3 from = tr.localScale;
+        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateAndHide(tr, from, Vector3.zero, 0.12f, go));
     }
 
     IEnumerator AnimateAndHide(Transform tr, Vector3 from, Vector3 to,
@@ -350,9 +351,11 @@ public class JellyTile : MonoBehaviour
     // Use:
     void AnimateExpandIn(int displayIdx, Vector3 targetScale)
     {
+        StopQuadrantAnim(displayIdx);
         var tr = quadrantRenderers[displayIdx].transform;
         quadrantRenderers[displayIdx].gameObject.SetActive(true);
-        StartCoroutine(AnimateScale(tr, tr.localScale * 0.7f, targetScale, 0.18f));
+        tr.localScale = Vector3.zero;
+        quadrantAnimCoroutines[displayIdx] = StartCoroutine(AnimateScale(tr, Vector3.zero, targetScale, 0.18f));
     }
 
     // ── Replace the scale set in TryExpandToFullTile ──────────────────────────
@@ -360,8 +363,9 @@ public class JellyTile : MonoBehaviour
     // Use:
     void AnimateFullExpand()
     {
+        for (int i = 0; i < 4; i++) StopQuadrantAnim(i);
         var tr = quadrantRenderers[0].transform;
-        Vector3 current = tr.localScale;
-        StartCoroutine(AnimateScale(tr, current, new Vector3(0.96f, 0.96f, 1f), 0.2f));
+        Vector3 from = tr.localScale * 0.75f;
+        quadrantAnimCoroutines[0] = StartCoroutine(AnimateScale(tr, from, new Vector3(0.96f, 0.96f, 1f), 0.2f));
     }
 }

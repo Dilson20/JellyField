@@ -28,8 +28,8 @@ public class MergeManager : MonoBehaviour
 
         GridManager gm = GridManager.Instance;
 
-        // STEP 1: Snapshot all merge pairs across ALL directions before touching anything
-        var merges = new List<(JellyTile ourTile, int ourQ, JellyTile theirTile, int theirQ)>();
+        // Store (tile, quadrant, SNAPSHOT COLOR) so we never double-clear after expansion refills a slot
+        var merges = new List<(JellyTile ourTile, int ourQ, int ourColor, JellyTile theirTile, int theirQ, int theirColor)>();
         CollectMerges(tile, gm, 1, 0, RightOurs, RightTheirs, merges);
         CollectMerges(tile, gm, -1, 0, LeftOurs, LeftTheirs, merges);
         CollectMerges(tile, gm, 0, 1, UpOurs, UpTheirs, merges);
@@ -37,13 +37,14 @@ public class MergeManager : MonoBehaviour
 
         if (merges.Count == 0) yield break;
 
-        // STEP 2: Execute all clears
         var affected = new HashSet<JellyTile>();
-        foreach (var (ourTile, ourQ, theirTile, theirQ) in merges)
+        foreach (var (ourTile, ourQ, ourColor, theirTile, theirQ, theirColor) in merges)
         {
-            if (ourTile.quadrantColors[ourQ] >= 0)
+            // ✅ Only clear if the quadrant STILL holds the exact color that was matched
+            // This prevents double-clearing when ExpandNeighborIntoCleared refills a slot
+            if (ourTile != null && ourTile.quadrantColors[ourQ] == ourColor)
                 ourTile.ClearQuadrant(ourQ);
-            if (theirTile.quadrantColors[theirQ] >= 0)
+            if (theirTile != null && theirTile.quadrantColors[theirQ] == theirColor)
                 theirTile.ClearQuadrant(theirQ);
 
             ourTile.OnSwap();
@@ -52,22 +53,17 @@ public class MergeManager : MonoBehaviour
             affected.Add(theirTile);
         }
 
-        // STEP 3: Now that ALL clears + neighbor expansions are done,
-        //         run TryExpandToFullTile on every affected tile
-        //         This is what was missing — full-tile promotion was checked
-        //         mid-batch before all expansions completed
         foreach (var t in affected)
             if (t != null && !t.IsFullyEmpty())
                 t.TryExpandToFullTile();
 
-        // STEP 4: Destroy empties
         foreach (var t in affected)
             CheckAndDestroyEmpty(t, gm);
     }
 
     void CollectMerges(JellyTile tile, GridManager gm, int dx, int dy,
-                       int[] ourQuads, int[] theirQuads,
-                       List<(JellyTile, int, JellyTile, int)> merges)
+                   int[] ourQuads, int[] theirQuads,
+                   List<(JellyTile, int, int, JellyTile, int, int)> merges)
     {
         JellyTile neighbor = gm.GetTile(tile.gridX + dx, tile.gridY + dy);
         if (neighbor == null) return;
@@ -77,7 +73,7 @@ public class MergeManager : MonoBehaviour
             int ourColor = tile.quadrantColors[ourQuads[i]];
             int theirColor = neighbor.quadrantColors[theirQuads[i]];
             if (ourColor >= 0 && theirColor >= 0 && ourColor == theirColor)
-                merges.Add((tile, ourQuads[i], neighbor, theirQuads[i]));
+                merges.Add((tile, ourQuads[i], ourColor, neighbor, theirQuads[i], theirColor));
         }
     }
 
