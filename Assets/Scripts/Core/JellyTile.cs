@@ -151,6 +151,10 @@ public class JellyTile : MonoBehaviour
             RestoreQuadrantVisual(partnerDisplay);
             quadrantRenderers[partnerDisplay].gameObject.SetActive(false);
             displayedBy[partner] = partner;
+
+            // Give remaining quadrants a chance to expand into both freed slots
+            ExpandNeighborIntoCleared(index);
+            ExpandNeighborIntoCleared(partner);
         }
         else
         {
