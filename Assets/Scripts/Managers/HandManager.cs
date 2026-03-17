@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class HandManager : MonoBehaviour
@@ -11,6 +11,7 @@ public class HandManager : MonoBehaviour
 
     [Header("Layout")]
     public float extraPaddingBelow = 0.4f;
+    public float handTileSpacing = 0.2f;
 
     private JellyTile[] slots;
     private Vector3[] slotPositions;
@@ -27,11 +28,12 @@ public class HandManager : MonoBehaviour
     {
         GridManager gm = GridManager.Instance;
         float step = gm.tileSize + gm.tileSpacing;
+        float handStep = gm.tileSize + handTileSpacing; // ← use this for hand layout
 
         float gridBottomY = -(gm.rows * step - gm.tileSpacing) / 2f;
         float handY = gridBottomY - step - extraPaddingBelow;
 
-        float totalW = handSize * step - gm.tileSpacing;
+        float totalW = handSize * handStep - handTileSpacing; // ← updated
         float startX = -totalW / 2f + gm.tileSize / 2f;
 
         slots = new JellyTile[handSize];
@@ -39,11 +41,11 @@ public class HandManager : MonoBehaviour
 
         for (int i = 0; i < handSize; i++)
         {
-            slotPositions[i] = new Vector3(startX + i * step, handY, 0);
+            slotPositions[i] = new Vector3(startX + i * handStep, handY, 0); // ← updated
             SpawnSlot(i);
         }
 
-        CreatePanel(new Vector3(0, handY, 0.1f), totalW + step * 0.4f, gm.tileSize + step * 0.35f);
+        CreatePanel(new Vector3(0, handY, 0.1f), totalW + handStep * 0.4f, gm.tileSize + step * 0.35f); // ← updated
     }
 
     void SpawnSlot(int i)
