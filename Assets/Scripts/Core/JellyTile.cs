@@ -6,36 +6,31 @@ public class JellyTile : MonoBehaviour
     public int gridY;
     public int[] quadrantColors = new int[4];
     private JiggleEffect jiggle;
+    private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
     private int[] displayedBy = new int[] { 0, 1, 2, 3 };
     private int[] mergePartner = { -1, -1, -1, -1 };
 
-
-    private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
-
     public static readonly Color[] JellyColors = new Color[]
     {
-        new Color(0.95f, 0.30f, 0.30f), // Red
-        new Color(0.30f, 0.60f, 0.95f), // Blue
-        new Color(0.30f, 0.85f, 0.45f), // Green
-        new Color(0.98f, 0.85f, 0.25f), // Yellow
-        new Color(0.75f, 0.35f, 0.95f)  // Purple
+        new Color(0.95f, 0.30f, 0.30f),
+        new Color(0.30f, 0.60f, 0.95f),
+        new Color(0.30f, 0.85f, 0.45f),
+        new Color(0.98f, 0.85f, 0.25f),
+        new Color(0.75f, 0.35f, 0.95f)
     };
 
-    // Adjacent pairs that can merge: 0=top row, 1=bottom row, 2=left col, 3=right col
     private static readonly int[][] MergePairs = new int[][]
     {
-        new int[] { 0, 1 }, // top horizontal
-        new int[] { 2, 3 }, // bottom horizontal
-        new int[] { 0, 2 }, // left vertical
-        new int[] { 1, 3 }  // right vertical
+        new int[] { 0, 1 },
+        new int[] { 2, 3 },
+        new int[] { 0, 2 },
+        new int[] { 1, 3 }
     };
 
     void Awake()
     {
         for (int i = 0; i < 4; i++)
             quadrantRenderers[i] = transform.GetChild(i).GetComponent<SpriteRenderer>();
-
-        // Add jiggle component automatically
         jiggle = gameObject.AddComponent<JiggleEffect>();
     }
 
@@ -44,6 +39,7 @@ public class JellyTile : MonoBehaviour
     public void OnSwap() => jiggle?.PlaySwap();
     public void OnDrag() => jiggle?.PlayDrag();
     public void OnIdle() => jiggle?.PlayIdle();
+    public int GetMergePartner(int index) => mergePartner[index];
 
     public void Init(int x, int y)
     {
@@ -55,36 +51,25 @@ public class JellyTile : MonoBehaviour
 
         if (layout == 0)
         {
-            // 4 individual squares, no same color cross-adjacent
             AssignAllUnique();
         }
         else if (layout == 1)
         {
-            // Top pair merged + Bottom pair merged
             int topColor = Random.Range(0, JellyColors.Length);
             int botColor = PickDifferentFrom(topColor);
-
-            quadrantColors[0] = topColor;
-            quadrantColors[1] = topColor;
-            quadrantColors[2] = botColor;
-            quadrantColors[3] = botColor;
-
-            ApplyMerge(0, topColor); // merge Q0+Q1 top horizontal
-            ApplyMerge(1, botColor); // merge Q2+Q3 bottom horizontal
+            quadrantColors[0] = topColor; quadrantColors[1] = topColor;
+            quadrantColors[2] = botColor; quadrantColors[3] = botColor;
+            ApplyMerge(0, topColor);
+            ApplyMerge(1, botColor);
         }
         else
         {
-            // Left pair merged + Right pair merged
             int leftColor = Random.Range(0, JellyColors.Length);
             int rightColor = PickDifferentFrom(leftColor);
-
-            quadrantColors[0] = leftColor;
-            quadrantColors[2] = leftColor;
-            quadrantColors[1] = rightColor;
-            quadrantColors[3] = rightColor;
-
-            ApplyMerge(2, leftColor);  // merge Q0+Q2 left vertical
-            ApplyMerge(3, rightColor); // merge Q1+Q3 right vertical
+            quadrantColors[0] = leftColor; quadrantColors[2] = leftColor;
+            quadrantColors[1] = rightColor; quadrantColors[3] = rightColor;
+            ApplyMerge(2, leftColor);
+            ApplyMerge(3, rightColor);
         }
 
         //OnIdle();
@@ -92,19 +77,15 @@ public class JellyTile : MonoBehaviour
 
     void ResetAllQuadrants()
     {
-        mergePartner = new int[] { -1, -1, -1, -1 };
         displayedBy = new int[] { 0, 1, 2, 3 };
+        mergePartner = new int[] { -1, -1, -1, -1 };
 
-        // Q0 top-left
         quadrantRenderers[0].transform.localPosition = new Vector3(-0.25f, 0.25f, 0);
         quadrantRenderers[0].transform.localScale = new Vector3(0.48f, 0.48f, 1);
-        // Q1 top-right
         quadrantRenderers[1].transform.localPosition = new Vector3(0.25f, 0.25f, 0);
         quadrantRenderers[1].transform.localScale = new Vector3(0.48f, 0.48f, 1);
-        // Q2 bottom-left
         quadrantRenderers[2].transform.localPosition = new Vector3(-0.25f, -0.25f, 0);
         quadrantRenderers[2].transform.localScale = new Vector3(0.48f, 0.48f, 1);
-        // Q3 bottom-right
         quadrantRenderers[3].transform.localPosition = new Vector3(0.25f, -0.25f, 0);
         quadrantRenderers[3].transform.localScale = new Vector3(0.48f, 0.48f, 1);
 
@@ -115,10 +96,9 @@ public class JellyTile : MonoBehaviour
     void ApplyMerge(int pairIndex, int color)
     {
         int[] pair = MergePairs[pairIndex];
-        int a = pair[0];
-        int b = pair[1];
+        int a = pair[0], b = pair[1];
 
-        mergePartner[a] = b; // track partners
+        mergePartner[a] = b;
         mergePartner[b] = a;
 
         quadrantRenderers[b].gameObject.SetActive(false);
@@ -137,82 +117,24 @@ public class JellyTile : MonoBehaviour
         quadrantRenderers[a].gameObject.SetActive(true);
     }
 
-    void AssignAllUnique()
-    {
-        // Pick 4 completely different colors
-        int[] available = { 0, 1, 2, 3, 4 };
-        Shuffle(available);
-
-        for (int i = 0; i < 4; i++)
-        {
-            quadrantColors[i] = available[i];
-            quadrantRenderers[i].color = JellyColors[available[i]];
-            quadrantRenderers[i].gameObject.SetActive(true);
-        }
-    }
-
-    void Shuffle(int[] array)
-    {
-        for (int i = array.Length - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            int temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
-        }
-    }
-
-    int PickColorAvoidingNeighbors(int quadrant, int forbidden)
-    {
-        int c;
-        int attempts = 0;
-        do
-        {
-            c = Random.Range(0, JellyColors.Length);
-            attempts++;
-        } while (c == forbidden && attempts < 20);
-        return c;
-    }
-
-    int PickDifferentFrom(int a)
-    {
-        int c;
-        do { c = Random.Range(0, JellyColors.Length); } while (c == a);
-        return c;
-    }
-
-    int PickDifferentFrom2(int a, int b)
-    {
-        int c;
-        int attempts = 0;
-        do
-        {
-            c = Random.Range(0, JellyColors.Length);
-            attempts++;
-        } while ((c == a || c == b) && attempts < 20);
-        return c;
-    }
-
-    int[] GetOtherQuadrants(int[] pair)
-    {
-        System.Collections.Generic.List<int> others = new();
-        for (int i = 0; i < 4; i++)
-            if (i != pair[0] && i != pair[1])
-                others.Add(i);
-        return others.ToArray();
-    }
-
-    public void SetQuadrantColor(int quadrant, int colorID)
-    {
-        quadrantColors[quadrant] = colorID;
-        quadrantRenderers[quadrant].color = JellyColors[colorID];
-    }
-
     public void ClearQuadrant(int index)
     {
+        if (IsFullTile())
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                quadrantColors[i] = -1;
+                mergePartner[i] = -1;
+                displayedBy[i] = i;
+                RestoreQuadrantVisual(i);
+                quadrantRenderers[i].gameObject.SetActive(false);
+            }
+            return;
+        }
+
         int partner = mergePartner[index];
 
-        // Clear this quadrant
+        // Clear this quadrant visually
         quadrantColors[index] = -1;
         mergePartner[index] = -1;
         int displayIdx = displayedBy[index];
@@ -222,7 +144,7 @@ public class JellyTile : MonoBehaviour
 
         if (partner >= 0 && quadrantColors[partner] >= 0)
         {
-            // Feature 1 — 2-size block disappears entirely
+            // Both were merged — clear partner too (2-size block disappears entirely)
             quadrantColors[partner] = -1;
             mergePartner[partner] = -1;
             int partnerDisplay = displayedBy[partner];
@@ -232,9 +154,10 @@ public class JellyTile : MonoBehaviour
         }
         else
         {
-            // Feature 2 — expand adjacent quadrant into cleared space
+            // Solo quadrant cleared — expand an adjacent partner into the space
             ExpandNeighborIntoCleared(index);
         }
+        TryExpandToFullTile();
     }
 
     void ExpandNeighborIntoCleared(int clearedIndex)
@@ -247,10 +170,11 @@ public class JellyTile : MonoBehaviour
             else if (pair[1] == clearedIndex) other = pair[0];
 
             if (other < 0) continue;
-            if (quadrantColors[other] < 0) continue;  // other is empty
-            if (mergePartner[other] >= 0) continue;   // already merged
+            if (quadrantColors[other] < 0) continue;
+            if (mergePartner[other] >= 0) continue;
+            if (displayedBy[other] != other) continue;
 
-            // Expand 'other' to fill both spots
+            // Expand other to cover the cleared slot
             mergePartner[other] = clearedIndex;
             displayedBy[clearedIndex] = other;
             quadrantColors[clearedIndex] = quadrantColors[other];
@@ -265,19 +189,107 @@ public class JellyTile : MonoBehaviour
             }
             quadrantRenderers[other].color = JellyColors[quadrantColors[other]];
             quadrantRenderers[other].gameObject.SetActive(true);
-            break; // only expand one neighbor
+            break;
         }
+        TryExpandToFullTile();
     }
 
     void RestoreQuadrantVisual(int index)
     {
         Vector3[] positions = {
-        new Vector3(-0.25f,  0.25f, 0),
-        new Vector3( 0.25f,  0.25f, 0),
-        new Vector3(-0.25f, -0.25f, 0),
-        new Vector3( 0.25f, -0.25f, 0)
-    };
+            new Vector3(-0.25f,  0.25f, 0),
+            new Vector3( 0.25f,  0.25f, 0),
+            new Vector3(-0.25f, -0.25f, 0),
+            new Vector3( 0.25f, -0.25f, 0)
+        };
         quadrantRenderers[index].transform.localPosition = positions[index];
         quadrantRenderers[index].transform.localScale = new Vector3(0.48f, 0.48f, 1);
+    }
+
+    void AssignAllUnique()
+    {
+        int[] available = { 0, 1, 2, 3, 4 };
+        Shuffle(available);
+        for (int i = 0; i < 4; i++)
+        {
+            quadrantColors[i] = available[i];
+            quadrantRenderers[i].color = JellyColors[available[i]];
+            quadrantRenderers[i].gameObject.SetActive(true);
+        }
+    }
+
+    void Shuffle(int[] array)
+    {
+        for (int i = array.Length - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            int temp = array[i]; array[i] = array[j]; array[j] = temp;
+        }
+    }
+
+    int PickDifferentFrom(int a)
+    {
+        int c;
+        do { c = Random.Range(0, JellyColors.Length); } while (c == a);
+        return c;
+    }
+
+    public void SetQuadrantColor(int quadrant, int colorID)
+    {
+        quadrantColors[quadrant] = colorID;
+        quadrantRenderers[quadrant].color = JellyColors[colorID];
+    }
+
+    public bool IsFullyEmpty()
+    {
+        for (int i = 0; i < 4; i++)
+            if (quadrantColors[i] >= 0) return false;
+        return true;
+    }
+
+    bool IsFullTile()
+    {
+        // Full tile: Q0 is display for all, all quadrants have same color
+        for (int i = 1; i < 4; i++)
+            if (displayedBy[i] != 0) return false;
+        return quadrantColors[0] >= 0;
+    }
+
+    void TryExpandToFullTile()
+    {
+        // Collect all active quadrant colors
+        int activeColor = -1;
+        for (int i = 0; i < 4; i++)
+        {
+            if (quadrantColors[i] < 0) continue;
+            if (activeColor == -1) activeColor = quadrantColors[i];
+            else if (quadrantColors[i] != activeColor) return; // different colors, don't expand
+        }
+
+        if (activeColor == -1) return; // all empty
+
+        // Check at least 1 quadrant is active
+        bool anyActive = false;
+        for (int i = 0; i < 4; i++)
+            if (quadrantColors[i] >= 0) { anyActive = true; break; }
+        if (!anyActive) return;
+
+        // All active quadrants same color — expand Q0 to full tile
+        // Hide all others
+        for (int i = 1; i < 4; i++)
+        {
+            quadrantRenderers[i].gameObject.SetActive(false);
+            displayedBy[i] = 0;
+            mergePartner[i] = 0;
+            quadrantColors[i] = activeColor;
+        }
+        mergePartner[0] = -1; // Q0 represents all
+
+        // Expand Q0 to full tile size
+        quadrantRenderers[0].transform.localPosition = new Vector3(0f, 0f, 0);
+        quadrantRenderers[0].transform.localScale = new Vector3(0.96f, 0.96f, 1);
+        quadrantRenderers[0].color = JellyColors[activeColor];
+        quadrantRenderers[0].gameObject.SetActive(true);
+        quadrantColors[0] = activeColor;
     }
 }
