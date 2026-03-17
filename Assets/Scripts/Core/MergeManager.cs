@@ -53,6 +53,8 @@ public class MergeManager : MonoBehaviour
             affected.Add(theirTile);
         }
 
+        SoundManager.Instance?.PlayMerge();
+
         foreach (var t in affected)
             if (t != null && !t.IsFullyEmpty())
                 t.TryExpandToFullTile();
