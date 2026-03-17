@@ -39,8 +39,16 @@ public class JellyTile : MonoBehaviour
         jiggle = gameObject.AddComponent<JiggleEffect>();
     }
 
-    public void OnPickup() => jiggle?.PlayPickup();
-    public void OnDrop() => jiggle?.PlayDrop();
+    public void OnPickup()
+    {
+        jiggle?.PlayPickup();
+        SoundManager.Instance?.PlayPickup();
+    }
+    public void OnDrop()
+    {
+        jiggle?.PlayDrop();
+        SoundManager.Instance?.PlayPlace();
+    }
     public void OnSwap() => jiggle?.PlaySwap();
     public void OnDrag() => jiggle?.PlayDrag();
     public void OnIdle() => jiggle?.PlayIdle();
