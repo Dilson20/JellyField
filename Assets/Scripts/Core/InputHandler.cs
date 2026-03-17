@@ -63,6 +63,7 @@ public class InputHandler : MonoBehaviour
                 // Lift tile above others
                 selectedTile.transform.localScale = originalScale * 1.1f;
                 SetSortingOrder(selectedTile, 10);
+                selectedTile.OnPickup();
             }
         }
     }
@@ -85,27 +86,13 @@ public class InputHandler : MonoBehaviour
         if (!isDragging || selectedTile == null) { ResetInput(); return; }
 
         Vector2 worldPos = mainCam.ScreenToWorldPoint(screenPos);
-        Vector2 delta = worldPos - dragStartPos;
 
-        // Restore scale and sort order
         selectedTile.transform.localScale = originalScale;
         SetSortingOrder(selectedTile, 0);
 
-        if (delta.magnitude < 0.2f)
-        {
-            // Snap back
-            AnimateToPosition(selectedTile, tileOriginalPos);
-            ResetInput();
-            return;
-        }
+        GridManager.Instance.TryMoveToPosition(selectedTile, worldPos);
 
-        Direction dir = Mathf.Abs(delta.x) > Mathf.Abs(delta.y)
-            ? (delta.x > 0 ? Direction.Right : Direction.Left)
-            : (delta.y > 0 ? Direction.Up : Direction.Down);
-
-        // Snap tile back first, then swap
-        selectedTile.transform.position = tileOriginalPos;
-        GridManager.Instance.TrySwap(selectedTile, dir);
+        StartCoroutine(ResumeIdle(selectedTile));
         ResetInput();
     }
 

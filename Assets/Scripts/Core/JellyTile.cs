@@ -39,6 +39,8 @@ public class JellyTile : MonoBehaviour
     public void OnPickup() => jiggle?.PlayPickup();
     public void OnDrop() => jiggle?.PlayDrop();
     public void OnSwap() => jiggle?.PlaySwap();
+    public void OnDrag() => jiggle?.PlayDrag();
+    public void OnIdle() => jiggle?.PlayIdle();
 
     public void Init(int x, int y)
     {
@@ -81,6 +83,8 @@ public class JellyTile : MonoBehaviour
             ApplyMerge(2, leftColor);  // merge Q0+Q2 left vertical
             ApplyMerge(3, rightColor); // merge Q1+Q3 right vertical
         }
+
+        //OnIdle();
     }
 
     void ResetAllQuadrants()

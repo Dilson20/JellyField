@@ -41,6 +41,51 @@ public class JiggleEffect : MonoBehaviour
         transform.localScale = baseScale;
     }
 
+    public void PlayDrag()
+    {
+        StopJiggle();
+        jiggleCoroutine = StartCoroutine(DragJiggle());
+    }
+
+    public void PlayIdle()
+    {
+        StopJiggle();
+        jiggleCoroutine = StartCoroutine(IdleShake());
+    }
+
+    // Continuous jiggle while being dragged
+    IEnumerator DragJiggle()
+    {
+        float t = 0f;
+        while (true)
+        {
+            t += Time.deltaTime * 8f;
+            float wobbleX = Mathf.Sin(t) * 0.08f;
+            float wobbleY = Mathf.Cos(t * 1.3f) * 0.08f;
+            transform.localScale = new Vector3(
+                baseScale.x * (1f + wobbleX),
+                baseScale.y * (1f + wobbleY),
+                1f);
+            yield return null;
+        }
+    }
+
+    // Gentle idle shake when not moving
+    IEnumerator IdleShake()
+    {
+        float t = Random.Range(0f, 10f); // random offset so tiles don't sync
+        while (true)
+        {
+            t += Time.deltaTime * 2.5f;
+            float wobble = Mathf.Sin(t) * 0.03f;
+            transform.localScale = new Vector3(
+                baseScale.x * (1f + wobble),
+                baseScale.y * (1f - wobble),
+                1f);
+            yield return null;
+        }
+    }
+
     // Squash down then spring back up
     IEnumerator PickupJiggle()
     {
