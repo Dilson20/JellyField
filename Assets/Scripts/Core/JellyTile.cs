@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class JellyTile : MonoBehaviour
 {
@@ -144,7 +144,7 @@ public class JellyTile : MonoBehaviour
 
         if (partner >= 0 && quadrantColors[partner] >= 0)
         {
-            // Both were merged � clear partner too (2-size block disappears entirely)
+            // Both were merged — clear partner too (2-size block disappears entirely)
             quadrantColors[partner] = -1;
             mergePartner[partner] = -1;
             int partnerDisplay = displayedBy[partner];
@@ -158,7 +158,7 @@ public class JellyTile : MonoBehaviour
         }
         else
         {
-            // Solo quadrant cleared � expand an adjacent partner into the space
+            // Solo quadrant cleared — expand an adjacent partner into the space
             ExpandNeighborIntoCleared(index);
         }
         TryExpandToFullTile();
@@ -278,7 +278,7 @@ public class JellyTile : MonoBehaviour
             if (quadrantColors[i] >= 0) { anyActive = true; break; }
         if (!anyActive) return;
 
-        // All active quadrants same color � expand Q0 to full tile
+        // All active quadrants same color — expand Q0 to full tile
         // Hide all others
         for (int i = 1; i < 4; i++)
         {
@@ -295,5 +295,61 @@ public class JellyTile : MonoBehaviour
         quadrantRenderers[0].color = JellyColors[activeColor];
         quadrantRenderers[0].gameObject.SetActive(true);
         quadrantColors[0] = activeColor;
+    }
+
+    // ── Add this helper coroutine anywhere in JellyTile ──────────────────────
+    IEnumerator AnimateScale(Transform tr, Vector3 from, Vector3 to, float duration)
+    {
+        float elapsed = 0f;
+        tr.localScale = from;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            // Cubic ease-out with slight overshoot (feels springy)
+            float ease = 1f - Mathf.Pow(1f - Mathf.Min(t, 1f), 3f);
+            tr.localScale = Vector3.LerpUnclamped(from, to, ease);
+            yield return null;
+        }
+        tr.localScale = to;
+    }
+
+    // ── Replace SetActive(false) in ClearQuadrant with this ───────────────────
+    // Instead of: quadrantRenderers[displayIdx].gameObject.SetActive(false);
+    // Use:
+    void AnimateOut(int displayIdx)
+    {
+        var tr = quadrantRenderers[displayIdx].transform;
+        Vector3 current = tr.localScale;
+        StartCoroutine(AnimateAndHide(tr, current, Vector3.zero, 0.12f,
+            quadrantRenderers[displayIdx].gameObject));
+    }
+
+    IEnumerator AnimateAndHide(Transform tr, Vector3 from, Vector3 to,
+                                float duration, GameObject hideAfter)
+    {
+        yield return AnimateScale(tr, from, to, duration);
+        hideAfter.SetActive(false);
+        tr.localScale = from; // restore scale for reuse
+    }
+
+    // ── Replace direct scale sets in ExpandNeighborIntoCleared ───────────────
+    // Instead of: quadrantRenderers[displayIdx].transform.localScale = newScale;
+    // Use:
+    void AnimateExpandIn(int displayIdx, Vector3 targetScale)
+    {
+        var tr = quadrantRenderers[displayIdx].transform;
+        quadrantRenderers[displayIdx].gameObject.SetActive(true);
+        StartCoroutine(AnimateScale(tr, tr.localScale * 0.7f, targetScale, 0.18f));
+    }
+
+    // ── Replace the scale set in TryExpandToFullTile ──────────────────────────
+    // Instead of: quadrantRenderers[0].transform.localScale = new Vector3(0.96f, 0.96f, 1f);
+    // Use:
+    void AnimateFullExpand()
+    {
+        var tr = quadrantRenderers[0].transform;
+        Vector3 current = tr.localScale;
+        StartCoroutine(AnimateScale(tr, current, new Vector3(0.96f, 0.96f, 1f), 0.2f));
     }
 }

@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class MergeManager : MonoBehaviour
 {
     public static MergeManager Instance;
-
     void Awake() { Instance = this; }
 
     private static readonly int[] RightOurs = { 1, 3 };
@@ -24,60 +24,66 @@ public class MergeManager : MonoBehaviour
     IEnumerator DoMerge(JellyTile tile)
     {
         yield return new WaitForSeconds(0.15f);
-
         if (tile == null) yield break;
 
         GridManager gm = GridManager.Instance;
 
-        TryMergeDirection(tile, gm, 1, 0, RightOurs, RightTheirs);
-        TryMergeDirection(tile, gm, -1, 0, LeftOurs, LeftTheirs);
-        TryMergeDirection(tile, gm, 0, 1, UpOurs, UpTheirs);
-        TryMergeDirection(tile, gm, 0, -1, DownOurs, DownTheirs);
+        // STEP 1: Snapshot all merge pairs across ALL directions before touching anything
+        var merges = new List<(JellyTile ourTile, int ourQ, JellyTile theirTile, int theirQ)>();
+        CollectMerges(tile, gm, 1, 0, RightOurs, RightTheirs, merges);
+        CollectMerges(tile, gm, -1, 0, LeftOurs, LeftTheirs, merges);
+        CollectMerges(tile, gm, 0, 1, UpOurs, UpTheirs, merges);
+        CollectMerges(tile, gm, 0, -1, DownOurs, DownTheirs, merges);
 
-        CheckAndDestroyEmpty(tile, gm);
+        if (merges.Count == 0) yield break;
+
+        // STEP 2: Execute all clears
+        var affected = new HashSet<JellyTile>();
+        foreach (var (ourTile, ourQ, theirTile, theirQ) in merges)
+        {
+            if (ourTile.quadrantColors[ourQ] >= 0)
+                ourTile.ClearQuadrant(ourQ);
+            if (theirTile.quadrantColors[theirQ] >= 0)
+                theirTile.ClearQuadrant(theirQ);
+
+            ourTile.OnSwap();
+            theirTile.OnSwap();
+            affected.Add(ourTile);
+            affected.Add(theirTile);
+        }
+
+        // STEP 3: Now that ALL clears + neighbor expansions are done,
+        //         run TryExpandToFullTile on every affected tile
+        //         This is what was missing — full-tile promotion was checked
+        //         mid-batch before all expansions completed
+        foreach (var t in affected)
+            if (t != null && !t.IsFullyEmpty())
+                t.TryExpandToFullTile();
+
+        // STEP 4: Destroy empties
+        foreach (var t in affected)
+            CheckAndDestroyEmpty(t, gm);
     }
 
-    void TryMergeDirection(JellyTile tile, GridManager gm,
-                       int dx, int dy,
-                       int[] ourQuads, int[] theirQuads)
+    void CollectMerges(JellyTile tile, GridManager gm, int dx, int dy,
+                       int[] ourQuads, int[] theirQuads,
+                       List<(JellyTile, int, JellyTile, int)> merges)
     {
-        int nx = tile.gridX + dx;
-        int ny = tile.gridY + dy;
-
-        JellyTile neighbor = gm.GetTile(nx, ny);
+        JellyTile neighbor = gm.GetTile(tile.gridX + dx, tile.gridY + dy);
         if (neighbor == null) return;
 
-        // ✅ Snapshot ALL match decisions BEFORE any ClearQuadrant calls
-        bool[] shouldMerge = new bool[ourQuads.Length];
         for (int i = 0; i < ourQuads.Length; i++)
         {
             int ourColor = tile.quadrantColors[ourQuads[i]];
             int theirColor = neighbor.quadrantColors[theirQuads[i]];
-            shouldMerge[i] = ourColor >= 0 && theirColor >= 0 && ourColor == theirColor;
-        }
-
-        // Now execute clears based on the snapshot
-        for (int i = 0; i < ourQuads.Length; i++)
-        {
-            if (!shouldMerge[i]) continue;
-
-            // Guard: partner-clear from a previous iteration may have already cleared this
-            if (tile.quadrantColors[ourQuads[i]] >= 0)
-                tile.ClearQuadrant(ourQuads[i]);
-            if (neighbor.quadrantColors[theirQuads[i]] >= 0)
-                neighbor.ClearQuadrant(theirQuads[i]);
-
-            tile.OnSwap();
-            neighbor.OnSwap();
-            CheckAndDestroyEmpty(neighbor, gm);
+            if (ourColor >= 0 && theirColor >= 0 && ourColor == theirColor)
+                merges.Add((tile, ourQuads[i], neighbor, theirQuads[i]));
         }
     }
 
     void CheckAndDestroyEmpty(JellyTile tile, GridManager gm)
     {
-        if (tile == null) return;
-        if (!tile.IsFullyEmpty()) return;
-
+        if (tile == null || !tile.IsFullyEmpty()) return;
         gm.RemoveTile(tile.gridX, tile.gridY);
         Destroy(tile.gameObject);
     }
