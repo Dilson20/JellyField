@@ -5,6 +5,7 @@ public class JellyTile : MonoBehaviour
     public int gridX;
     public int gridY;
     public int[] quadrantColors = new int[4];
+    private JiggleEffect jiggle;
 
     private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
 
@@ -30,7 +31,14 @@ public class JellyTile : MonoBehaviour
     {
         for (int i = 0; i < 4; i++)
             quadrantRenderers[i] = transform.GetChild(i).GetComponent<SpriteRenderer>();
+
+        // Add jiggle component automatically
+        jiggle = gameObject.AddComponent<JiggleEffect>();
     }
+
+    public void OnPickup() => jiggle?.PlayPickup();
+    public void OnDrop() => jiggle?.PlayDrop();
+    public void OnSwap() => jiggle?.PlaySwap();
 
     public void Init(int x, int y)
     {
