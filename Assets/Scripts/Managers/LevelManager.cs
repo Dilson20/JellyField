@@ -10,7 +10,7 @@ public class LevelManager : MonoBehaviour
 
     [Header("Events — hook up UI here")]
     public UnityEvent onLevelComplete;
-    public UnityEvent<int> onScoreChanged;       // changed to carry score int
+    public UnityEvent<int> onScoreChanged;
     public UnityEvent<int, int> onColorProgress;
 
     private int[] mergeCount = new int[5];

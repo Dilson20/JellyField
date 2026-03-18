@@ -12,6 +12,7 @@ public class HandManager : MonoBehaviour
     [Header("Layout")]
     public float extraPaddingBelow = 0.4f;
     public float handTileSpacing = 0.2f;
+    public float cameraYOffset = -0.6f;
 
     private JellyTile[] slots;
     private Vector3[] slotPositions;
@@ -21,6 +22,12 @@ public class HandManager : MonoBehaviour
     void Start()
     {
         BuildHand();
+        AdjustCamera();
+    }
+
+    void OnValidate()
+    {
+        if (!Application.isPlaying) return;
         AdjustCamera();
     }
 
@@ -75,6 +82,7 @@ public class HandManager : MonoBehaviour
 
     void AdjustCamera()
     {
+        if (slotPositions == null) return;
         GridManager gm = GridManager.Instance;
         float step = gm.tileSize + gm.tileSpacing;
         float gridTop = (gm.rows * step - gm.tileSpacing) / 2f;
@@ -85,7 +93,7 @@ public class HandManager : MonoBehaviour
 
         var cam = Camera.main;
         cam.orthographicSize = span / 2f + 0.5f;
-        cam.transform.position = new Vector3(0, centerY, -10f);
+        cam.transform.position = new Vector3(0, centerY + cameraYOffset, -10f);
     }
 
     public Vector3 GetSlotPosition(int i) =>
