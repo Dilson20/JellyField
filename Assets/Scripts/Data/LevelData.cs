@@ -13,6 +13,7 @@ public class LevelData : ScriptableObject
     public int requireYellow = 0;
     public int requirePurple = 0;
 
+
     [Header("Color Spawn Weights — higher = spawns more often (0 = never spawns)")]
     [Range(0, 10)] public int weightRed = 1;
     [Range(0, 10)] public int weightBlue = 1;
