@@ -10,14 +10,15 @@ public class LevelManager : MonoBehaviour
 
     [Header("Events — hook up UI here")]
     public UnityEvent onLevelComplete;
-    public UnityEvent onScoreChanged;
+    public UnityEvent<int> onScoreChanged;       // changed to carry score int
+    public UnityEvent<int, int> onColorProgress;
 
-    // Runtime tracking
-    private int[] mergeCount = new int[5]; // index = color index
+    private int[] mergeCount = new int[5];
     private int score;
-
     public int Score => score;
+
     public int GetMergeCount(int colorIndex) => mergeCount[colorIndex];
+
     public int GetRequirement(int colorIndex)
     {
         if (levelData == null) return 0;
@@ -30,20 +31,22 @@ public class LevelManager : MonoBehaviour
 
     void Awake() { Instance = this; }
 
-    // Called by MergeManager each time a quadrant pair merges
     public void RegisterMerge(int colorIndex, int quadrantCount = 1)
     {
         if (colorIndex < 0 || colorIndex >= 5) return;
 
         mergeCount[colorIndex] += quadrantCount;
         score += (levelData?.pointsPerMerge ?? 10) * quadrantCount;
+        onScoreChanged?.Invoke(score);
 
-        onScoreChanged?.Invoke();
+        int requirement = GetRequirement(colorIndex);
+        int remaining = Mathf.Max(0, requirement - mergeCount[colorIndex]);
+        onColorProgress?.Invoke(colorIndex, remaining);
 
         if (CheckWin())
         {
             score += levelData?.bonusPerLevel ?? 100;
-            onScoreChanged?.Invoke();
+            onScoreChanged?.Invoke(score);
             onLevelComplete?.Invoke();
             Debug.Log($"Level Complete! Score: {score}");
         }
@@ -52,7 +55,6 @@ public class LevelManager : MonoBehaviour
     bool CheckWin()
     {
         if (levelData == null || levelData.IsSandbox()) return false;
-
         return mergeCount[0] >= levelData.requireRed
             && mergeCount[1] >= levelData.requireBlue
             && mergeCount[2] >= levelData.requireGreen
@@ -64,6 +66,6 @@ public class LevelManager : MonoBehaviour
     {
         mergeCount = new int[5];
         score = 0;
-        onScoreChanged?.Invoke();
+        onScoreChanged?.Invoke(score);
     }
 }
