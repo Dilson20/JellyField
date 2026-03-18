@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddde196be2eedf947bcb36c3a9f3c564, type: 3}
+  m_Name: Level_1
+  m_EditorClassIdentifier: Assembly-CSharp::LevelData
+  levelName: Level 1
+  requireRed: 0
+  requireBlue: 0
+  requireGreen: 0
+  requireYellow: 0
+  requirePurple: 0
+  weightRed: 1
+  weightBlue: 1
+  weightGreen: 1
+  weightYellow: 1
+  weightPurple: 1
+  pointsPerMerge: 10
+  bonusPerLevel: 100
