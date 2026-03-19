@@ -17,8 +17,18 @@ public class GridManager : MonoBehaviour
     public GameObject tilePrefab;
     public GameObject blankTilePrefab;
 
+    [Header("Side Extensions")]
+    public bool extendLeft;
+    public bool extendRight;
+    public bool extendTop;
+    public bool extendBottom;
+
     private JellyTile[,] grid;
     private bool[,] isBlank;
+
+    // Extension cells live outside [0,columns) x [0,rows) bounds
+    private HashSet<Vector2Int> blankExtensions = new HashSet<Vector2Int>();
+    private Dictionary<Vector2Int, JellyTile> extensionTiles = new Dictionary<Vector2Int, JellyTile>();
 
     void Awake() { Instance = this; }
 
@@ -28,13 +38,37 @@ public class GridManager : MonoBehaviour
         CenterCamera();
     }
 
+    IEnumerable<int> MiddleIndices(int count)
+    {
+        if (count % 2 == 1) { yield return count / 2; }
+        else { yield return count / 2 - 1; yield return count / 2; }
+    }
+
+    List<Vector2Int> GetExtensionCells()
+    {
+        var cells = new List<Vector2Int>();
+        if (extendLeft)   foreach (int y in MiddleIndices(rows))    cells.Add(new Vector2Int(-1, y));
+        if (extendRight)  foreach (int y in MiddleIndices(rows))    cells.Add(new Vector2Int(columns, y));
+        if (extendBottom) foreach (int x in MiddleIndices(columns)) cells.Add(new Vector2Int(x, -1));
+        if (extendTop)    foreach (int x in MiddleIndices(columns)) cells.Add(new Vector2Int(x, rows));
+        return cells;
+    }
+
+    bool IsExtension(int x, int y) => x < 0 || x >= columns || y < 0 || y >= rows;
+
     void GenerateGrid()
     {
         grid = new JellyTile[columns, rows];
         isBlank = new bool[columns, rows];
+        blankExtensions.Clear();
+        extensionTiles.Clear();
+
         for (int x = 0; x < columns; x++)
             for (int y = 0; y < rows; y++)
                 isBlank[x, y] = true;
+
+        foreach (var ext in GetExtensionCells())
+            blankExtensions.Add(ext);
 
         SpawnBackgroundTiles();
 
@@ -67,6 +101,7 @@ public class GridManager : MonoBehaviour
                 tile.Init(x, y);
                 tile.isInteractable = false;
                 grid[x, y] = tile;
+                isBlank[x, y] = false;
             }
             // else: leave the cell empty (blank background already placed)
         }
@@ -115,8 +150,10 @@ public class GridManager : MonoBehaviour
         int oy = tile.gridY;
         bool fromHand = (ox < 0 || oy < 0);
 
-        int bestX = -1, bestY = -1;
+        int bestX = int.MinValue, bestY = int.MinValue;
         float bestDist = float.MaxValue;
+
+        // Check main grid cells
         for (int x = 0; x < columns; x++)
             for (int y = 0; y < rows; y++)
             {
@@ -126,12 +163,35 @@ public class GridManager : MonoBehaviour
                 if (d < bestDist) { bestDist = d; bestX = x; bestY = y; }
             }
 
-        if (bestX != -1 && bestDist < tileSize + tileSpacing)
+        // Check extension cells
+        foreach (var ext in blankExtensions)
         {
-            if (!fromHand) { grid[ox, oy] = null; isBlank[ox, oy] = true; }
+            Vector3 cw = GridToWorld(ext.x, ext.y);
+            float d = Vector2.Distance(releaseWorldPos, new Vector2(cw.x, cw.y));
+            if (d < bestDist) { bestDist = d; bestX = ext.x; bestY = ext.y; }
+        }
 
-            isBlank[bestX, bestY] = false;
-            grid[bestX, bestY] = tile;
+        if (bestX != int.MinValue && bestDist < tileSize + tileSpacing)
+        {
+            // Clear old position
+            if (!fromHand)
+            {
+                if (IsExtension(ox, oy)) { extensionTiles.Remove(new Vector2Int(ox, oy)); blankExtensions.Add(new Vector2Int(ox, oy)); }
+                else { grid[ox, oy] = null; isBlank[ox, oy] = true; }
+            }
+
+            // Place at new position
+            if (IsExtension(bestX, bestY))
+            {
+                blankExtensions.Remove(new Vector2Int(bestX, bestY));
+                extensionTiles[new Vector2Int(bestX, bestY)] = tile;
+            }
+            else
+            {
+                isBlank[bestX, bestY] = false;
+                grid[bestX, bestY] = tile;
+            }
+
             tile.gridX = bestX;
             tile.gridY = bestY;
             tile.transform.position = GridToWorld(bestX, bestY);
@@ -166,22 +226,44 @@ public class GridManager : MonoBehaviour
             for (int y = 0; y < rows; y++)
             {
                 Vector3 pos = GridToWorld(x, y);
-                pos.z = 0.5f; // render behind jelly tiles
+                pos.z = 0.5f;
                 var bg = Instantiate(blankTilePrefab, pos, Quaternion.identity, transform);
                 bg.name = $"BG_{x}_{y}";
                 bg.transform.localScale = new Vector3(tileSize, tileSize, 1f);
             }
         }
+
+        // Spawn background tiles for extension cells
+        foreach (var ext in GetExtensionCells())
+        {
+            Vector3 pos = GridToWorld(ext.x, ext.y);
+            pos.z = 0.5f;
+            var bg = Instantiate(blankTilePrefab, pos, Quaternion.identity, transform);
+            bg.name = $"BG_EXT_{ext.x}_{ext.y}";
+            bg.transform.localScale = new Vector3(tileSize, tileSize, 1f);
+        }
     }
 
     public JellyTile GetTile(int x, int y)
     {
-        if (x < 0 || x >= columns || y < 0 || y >= rows) return null;
+        if (IsExtension(x, y))
+        {
+            extensionTiles.TryGetValue(new Vector2Int(x, y), out var ext);
+            return ext;
+        }
         return grid[x, y];
     }
 
     public void RemoveTile(int x, int y)
     {
+        if (IsExtension(x, y))
+        {
+            var key = new Vector2Int(x, y);
+            extensionTiles.Remove(key);
+            if (blankExtensions.Contains(key) == false && GetExtensionCells().Contains(key))
+                blankExtensions.Add(key);
+            return;
+        }
         if (x < 0 || x >= columns || y < 0 || y >= rows) return;
         grid[x, y] = null;
         isBlank[x, y] = true;

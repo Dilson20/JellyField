@@ -59,7 +59,7 @@ public class JellyTile : MonoBehaviour
         gridX = x; gridY = y;
         ResetAllQuadrants();
 
-        int layout = Random.Range(0, 3);
+        int layout = Random.Range(0, 4);
         if (layout == 0)
         {
             AssignAllUnique();
@@ -73,7 +73,7 @@ public class JellyTile : MonoBehaviour
             ApplyMerge(0, topColor);
             ApplyMerge(1, botColor);
         }
-        else
+        else if (layout == 2)
         {
             int leftColor = PickColor();
             int rightColor = PickDifferentFrom(leftColor);
@@ -81,6 +81,10 @@ public class JellyTile : MonoBehaviour
             quadrantColors[1] = rightColor; quadrantColors[3] = rightColor;
             ApplyMerge(2, leftColor);
             ApplyMerge(3, rightColor);
+        }
+        else
+        {
+            PromoteToFull(PickColor());
         }
     }
 

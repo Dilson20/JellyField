@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
   levelName: Level 1
   requireRed: 0
-  requireBlue: 0
-  requireGreen: 0
+  requireBlue: 4
+  requireGreen: 4
   requireYellow: 0
   requirePurple: 0
-  weightRed: 1
-  weightBlue: 1
-  weightGreen: 1
-  weightYellow: 1
-  weightPurple: 1
+  weightRed: 0
+  weightBlue: 4
+  weightGreen: 4
+  weightYellow: 0
+  weightPurple: 6
   pointsPerMerge: 10
   bonusPerLevel: 100

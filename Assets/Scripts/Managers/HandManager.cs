@@ -14,6 +14,10 @@ public class HandManager : MonoBehaviour
     public float handTileSpacing = 0.2f;
     public float cameraYOffset = -0.6f;
 
+    [Header("UI Compensation")]
+    [Tooltip("World-unit height taken by TopBar + PillsRow. Increase until grid fits below UI.")]
+    public float topUIPadding = 1.5f;
+
     private JellyTile[] slots;
     private Vector3[] slotPositions;
 
@@ -92,8 +96,9 @@ public class HandManager : MonoBehaviour
         float centerY = (gridTop + handBottom) / 2f;
 
         var cam = Camera.main;
-        cam.orthographicSize = span / 2f + 0.5f;
-        cam.transform.position = new Vector3(0, centerY + cameraYOffset, -10f);
+        // Expand orthographic size and shift camera down to leave room for top UI
+        cam.orthographicSize = span / 2f + 0.5f + topUIPadding / 2f;
+        cam.transform.position = new Vector3(0, centerY + cameraYOffset - topUIPadding / 2f, -10f);
     }
 
     public Vector3 GetSlotPosition(int i) =>

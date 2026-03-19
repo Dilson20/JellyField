@@ -18,11 +18,14 @@ public class GameHUD : MonoBehaviour
     public GameObject pausePanel;
     public Button resumeButton;
     public Button restartButton;
+    public Button pauseQuitButton;
 
     [Header("Win panel")]
     public GameObject winPanel;
     public TextMeshProUGUI winScoreText;
     public Button nextLevelButton;
+    public Button winRestartButton;
+    public Button winQuitButton;
 
     private GameObject[] pills = new GameObject[5];
     private TextMeshProUGUI[] pillTexts = new TextMeshProUGUI[5];
@@ -45,7 +48,10 @@ public class GameHUD : MonoBehaviour
         pauseButton.onClick.AddListener(OpenPause);
         resumeButton.onClick.AddListener(ClosePause);
         restartButton.onClick.AddListener(Restart);
-        nextLevelButton.onClick.AddListener(Restart);
+        nextLevelButton.onClick.AddListener(LoadNextLevel);
+        if (pauseQuitButton != null) pauseQuitButton.onClick.AddListener(QuitToMenu);
+        if (winRestartButton != null) winRestartButton.onClick.AddListener(Restart);
+        if (winQuitButton != null) winQuitButton.onClick.AddListener(QuitToMenu);
         scoreValueText.text = "0";
     }
 
@@ -105,6 +111,22 @@ public class GameHUD : MonoBehaviour
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    void LoadNextLevel()
+    {
+        Time.timeScale = 1f;
+        int next = SceneManager.GetActiveScene().buildIndex + 1;
+        if (next < SceneManager.sceneCountInBuildSettings)
+            SceneManager.LoadScene(next);
+        else
+            SceneManager.LoadScene("LevelSelection");
+    }
+
+    void QuitToMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("LevelSelection");
     }
 
     void OnDestroy() { Time.timeScale = 1f; }
