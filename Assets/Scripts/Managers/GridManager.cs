@@ -17,6 +17,10 @@ public class GridManager : MonoBehaviour
     public GameObject tilePrefab;
     public GameObject blankTilePrefab;
 
+    [Header("Grid Position")]
+    [Tooltip("Offset the entire grid vertically. Positive = up, Negative = down.")]
+    public float gridOffsetY = 0f;
+
     [Header("Side Extensions")]
     public bool extendLeft;
     public bool extendRight;
@@ -125,7 +129,7 @@ public class GridManager : MonoBehaviour
 
         gx = Mathf.FloorToInt((worldPos.x - startX + (tileSize + tileSpacing) / 2f)
              / (tileSize + tileSpacing));
-        gy = Mathf.FloorToInt((worldPos.y - startY + (tileSize + tileSpacing) / 2f)
+        gy = Mathf.FloorToInt((worldPos.y - gridOffsetY - startY + (tileSize + tileSpacing) / 2f)
              / (tileSize + tileSpacing));
 
         return gx >= 0 && gx < columns && gy >= 0 && gy < rows;
@@ -140,7 +144,7 @@ public class GridManager : MonoBehaviour
 
         return new Vector3(
             startX + gx * (tileSize + tileSpacing),
-            startY + gy * (tileSize + tileSpacing),
+            startY + gy * (tileSize + tileSpacing) + gridOffsetY,
             0);
     }
 
