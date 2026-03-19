@@ -6,20 +6,21 @@ public class LevelData : ScriptableObject
     [Header("Level Info")]
     public string levelName = "Level 1";
 
-    [Header("Color Requirements — how many merges needed per color to win")]
+    [Header("Color Requirements ï¿½ how many merges needed per color to win")]
     public int requireRed = 0;
     public int requireBlue = 0;
     public int requireGreen = 0;
     public int requireYellow = 0;
     public int requirePurple = 0;
+    public int requirePink = 0;
 
-
-    [Header("Color Spawn Weights — higher = spawns more often (0 = never spawns)")]
+    [Header("Color Spawn Weights ï¿½ higher = spawns more often (0 = never spawns)")]
     [Range(0, 10)] public int weightRed = 1;
     [Range(0, 10)] public int weightBlue = 1;
     [Range(0, 10)] public int weightGreen = 1;
     [Range(0, 10)] public int weightYellow = 1;
     [Range(0, 10)] public int weightPurple = 1;
+    [Range(0, 10)] public int weightPink = 1;
 
     [Header("Score")]
     public int pointsPerMerge = 10;
@@ -28,10 +29,10 @@ public class LevelData : ScriptableObject
     // Returns a weighted random color index based on weights
     public int GetWeightedRandomColor()
     {
-        int[] weights = { weightRed, weightBlue, weightGreen, weightYellow, weightPurple };
+        int[] weights = { weightRed, weightBlue, weightGreen, weightYellow, weightPurple, weightPink };
         int total = 0;
         foreach (int w in weights) total += w;
-        if (total == 0) return Random.Range(0, 5);
+        if (total == 0) return Random.Range(0, 6);
 
         int roll = Random.Range(0, total);
         int cumulative = 0;
@@ -47,6 +48,6 @@ public class LevelData : ScriptableObject
     public bool IsSandbox()
     {
         return requireRed == 0 && requireBlue == 0 && requireGreen == 0
-            && requireYellow == 0 && requirePurple == 0;
+            && requireYellow == 0 && requirePurple == 0 && requirePink == 0;
     }
 }

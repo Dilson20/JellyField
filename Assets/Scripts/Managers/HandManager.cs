@@ -109,6 +109,13 @@ public class HandManager : MonoBehaviour
         if (i < 0 || i >= slots.Length) return;
         slots[i] = null;
         StartCoroutine(Refill(i));
+        StartCoroutine(DelayedGameOverCheck());
+    }
+
+    IEnumerator DelayedGameOverCheck()
+    {
+        yield return new WaitForSeconds(0.7f / JellyTile.AnimSpeed);
+        LevelManager.Instance?.CheckGameOver();
     }
 
     IEnumerator Refill(int i)

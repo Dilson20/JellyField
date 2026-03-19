@@ -254,6 +254,39 @@ public class GridManager : MonoBehaviour
         return grid[x, y];
     }
 
+    public bool IsGridFull()
+    {
+        for (int x = 0; x < columns; x++)
+            for (int y = 0; y < rows; y++)
+                if (isBlank[x, y]) return false;
+        if (blankExtensions.Count > 0) return false;
+        return true;
+    }
+
+    public bool HasAnyMergePossible()
+    {
+        // Horizontal pairs
+        for (int x = 0; x < columns; x++)
+            for (int y = 0; y < rows; y++)
+            {
+                var a = GetTile(x, y);
+                var b = GetTile(x + 1, y);
+                if (a != null && b != null)
+                {
+                    if (a.quadrantColors[1] >= 0 && a.quadrantColors[1] == b.quadrantColors[0]) return true;
+                    if (a.quadrantColors[3] >= 0 && a.quadrantColors[3] == b.quadrantColors[2]) return true;
+                }
+                // Vertical pairs
+                var c = GetTile(x, y + 1);
+                if (a != null && c != null)
+                {
+                    if (a.quadrantColors[0] >= 0 && a.quadrantColors[0] == c.quadrantColors[2]) return true;
+                    if (a.quadrantColors[1] >= 0 && a.quadrantColors[1] == c.quadrantColors[3]) return true;
+                }
+            }
+        return false;
+    }
+
     public void RemoveTile(int x, int y)
     {
         if (IsExtension(x, y))

@@ -16,12 +16,14 @@ MonoBehaviour:
   requireRed: 0
   requireBlue: 0
   requireGreen: 0
-  requireYellow: 0
+  requireYellow: 8
   requirePurple: 0
+  requirePink: 0
   weightRed: 1
-  weightBlue: 1
-  weightGreen: 1
-  weightYellow: 1
-  weightPurple: 1
+  weightBlue: 5
+  weightGreen: 2
+  weightYellow: 2
+  weightPurple: 4
+  weightPink: 3
   pointsPerMerge: 10
   bonusPerLevel: 100

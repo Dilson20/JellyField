@@ -21,7 +21,8 @@ public class JellyTile : MonoBehaviour
         new Color(0.30f, 0.60f, 0.95f),
         new Color(0.30f, 0.85f, 0.45f),
         new Color(0.98f, 0.85f, 0.25f),
-        new Color(0.75f, 0.35f, 0.95f)
+        new Color(0.75f, 0.35f, 0.95f),
+        new Color(0.98f, 0.45f, 0.75f)
     };
 
     private static readonly int[][] MergePairs = new int[][]

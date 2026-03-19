@@ -27,13 +27,19 @@ public class GameHUD : MonoBehaviour
     public Button winRestartButton;
     public Button winQuitButton;
 
-    private GameObject[] pills = new GameObject[5];
-    private TextMeshProUGUI[] pillTexts = new TextMeshProUGUI[5];
+    [Header("Game Over panel")]
+    public GameObject gameOverPanel;
+    public Button gameOverRestartButton;
+    public Button gameOverQuitButton;
+
+    private GameObject[] pills = new GameObject[6];
+    private TextMeshProUGUI[] pillTexts = new TextMeshProUGUI[6];
 
     void Start()
     {
         pausePanel.SetActive(false);
         winPanel.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
 
         LevelManager lm = LevelManager.Instance;
         if (lm != null)
@@ -42,6 +48,7 @@ public class GameHUD : MonoBehaviour
             lm.onScoreChanged.AddListener(UpdateScore);
             lm.onColorProgress.AddListener(UpdateColorPill);
             lm.onLevelComplete.AddListener(ShowWin);
+            lm.onGameOver.AddListener(ShowGameOver);
             BuildColorPills(lm);
         }
 
@@ -52,12 +59,14 @@ public class GameHUD : MonoBehaviour
         if (pauseQuitButton != null) pauseQuitButton.onClick.AddListener(QuitToMenu);
         if (winRestartButton != null) winRestartButton.onClick.AddListener(Restart);
         if (winQuitButton != null) winQuitButton.onClick.AddListener(QuitToMenu);
+        if (gameOverRestartButton != null) gameOverRestartButton.onClick.AddListener(Restart);
+        if (gameOverQuitButton != null) gameOverQuitButton.onClick.AddListener(QuitToMenu);
         scoreValueText.text = "0";
     }
 
     void BuildColorPills(LevelManager lm)
     {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 6; i++)
         {
             int req = lm.GetRequirement(i);
             var pill = Instantiate(colorPillPrefab, colorPillParent);
@@ -80,7 +89,7 @@ public class GameHUD : MonoBehaviour
 
     void UpdateColorPill(int colorIndex, int remaining)
     {
-        if (colorIndex < 0 || colorIndex >= 5 || pills[colorIndex] == null) return;
+        if (colorIndex < 0 || colorIndex >= 6 || pills[colorIndex] == null) return;
         pillTexts[colorIndex].text = remaining.ToString();
 
         var group = pills[colorIndex].GetComponent<CanvasGroup>();
@@ -98,6 +107,12 @@ public class GameHUD : MonoBehaviour
     {
         pausePanel.SetActive(false);
         Time.timeScale = 1f;
+    }
+
+    void ShowGameOver()
+    {
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        Time.timeScale = 0f;
     }
 
     void ShowWin()
