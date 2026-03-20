@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddde196be2eedf947bcb36c3a9f3c564, type: 3}
   m_Name: Level_3
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  levelName: Level 1
+  levelName: Level 3
   requireRed: 0
   requireBlue: 0
   requireGreen: 0

@@ -41,8 +41,9 @@ public class HandManager : MonoBehaviour
         float step = gm.tileSize + gm.tileSpacing;
         float handStep = gm.tileSize + handTileSpacing; // ← use this for hand layout
 
-        float gridBottomY = -(gm.rows * step - gm.tileSpacing) / 2f;
-        float handY = gridBottomY - step - extraPaddingBelow;
+        float gridBottomY = -(gm.rows * step - gm.tileSpacing) / 2f + gm.gridOffsetY;
+        float gridCellBottom = gm.extendBottom ? gridBottomY - step : gridBottomY;
+        float handY = gridCellBottom - step - extraPaddingBelow;
 
         float totalW = handSize * handStep - handTileSpacing; // ← updated
         float startX = -totalW / 2f + gm.tileSize / 2f;
@@ -89,15 +90,24 @@ public class HandManager : MonoBehaviour
         if (slotPositions == null) return;
         GridManager gm = GridManager.Instance;
         float step = gm.tileSize + gm.tileSpacing;
-        float gridTop = (gm.rows * step - gm.tileSpacing) / 2f;
+
+        // Account for extension cells on top/bottom
+        float gridTop = (gm.rows * step - gm.tileSpacing) / 2f + gm.gridOffsetY
+                        + (gm.extendTop ? step : 0);
         float handBottom = slotPositions[0].y - gm.tileSize / 2f - 0.4f;
 
         float span = gridTop - handBottom;
         float centerY = (gridTop + handBottom) / 2f;
 
         var cam = Camera.main;
-        // Expand orthographic size and shift camera down to leave room for top UI
-        cam.orthographicSize = span / 2f + 0.5f + topUIPadding / 2f;
+        float orthoSize = span / 2f + 0.5f + topUIPadding / 2f;
+
+        // Also fit horizontally if grid is wide (extendLeft/extendRight)
+        float effectiveCols = gm.columns + (gm.extendLeft ? 1 : 0) + (gm.extendRight ? 1 : 0);
+        float totalGridWidth = effectiveCols * step - gm.tileSpacing;
+        float sizeFromWidth = totalGridWidth / (2f * cam.aspect) + 0.5f;
+
+        cam.orthographicSize = Mathf.Max(orthoSize, sizeFromWidth);
         cam.transform.position = new Vector3(0, centerY + cameraYOffset - topUIPadding / 2f, -10f);
     }
 
