@@ -109,7 +109,62 @@ public class GridManager : MonoBehaviour
             }
             // else: leave the cell empty (blank background already placed)
         }
+
+        BreakInitialMatches();
     }
+
+    void BreakInitialMatches()
+    {
+        bool anyMatch = true;
+        int passes = 0;
+        while (anyMatch && passes < 10)
+        {
+            anyMatch = false;
+            passes++;
+            for (int x = 0; x < columns; x++)
+            for (int y = 0; y < rows; y++)
+            {
+                if (grid[x, y] == null) continue;
+                if (TileHasMatchWithNeighbor(x, y))
+                {
+                    grid[x, y].Init(x, y);
+                    anyMatch = true;
+                }
+            }
+        }
+    }
+
+    bool TileHasMatchWithNeighbor(int x, int y)
+    {
+        var tile = grid[x, y];
+        var right = (x + 1 < columns) ? grid[x + 1, y] : null;
+        if (right != null)
+        {
+            if (ColorMatch(tile.quadrantColors[1], right.quadrantColors[0])) return true;
+            if (ColorMatch(tile.quadrantColors[3], right.quadrantColors[2])) return true;
+        }
+        var left = (x > 0) ? grid[x - 1, y] : null;
+        if (left != null)
+        {
+            if (ColorMatch(tile.quadrantColors[0], left.quadrantColors[1])) return true;
+            if (ColorMatch(tile.quadrantColors[2], left.quadrantColors[3])) return true;
+        }
+        var up = (y + 1 < rows) ? grid[x, y + 1] : null;
+        if (up != null)
+        {
+            if (ColorMatch(tile.quadrantColors[0], up.quadrantColors[2])) return true;
+            if (ColorMatch(tile.quadrantColors[1], up.quadrantColors[3])) return true;
+        }
+        var down = (y > 0) ? grid[x, y - 1] : null;
+        if (down != null)
+        {
+            if (ColorMatch(tile.quadrantColors[2], down.quadrantColors[0])) return true;
+            if (ColorMatch(tile.quadrantColors[3], down.quadrantColors[1])) return true;
+        }
+        return false;
+    }
+
+    bool ColorMatch(int a, int b) => a >= 0 && b >= 0 && a == b;
 
     void Shuffle(List<Vector2Int> list)
     {
