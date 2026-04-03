@@ -42,10 +42,19 @@ public class MergeManager : MonoBehaviour
         var affected = new HashSet<JellyTile>();
         foreach (var (ourTile, ourQ, ourColor, theirTile, theirQ, theirColor) in merges)
         {
+            bool cleared = false;
             if (ourTile != null && ourTile.quadrantColors[ourQ] == ourColor)
+            {
                 ourTile.ClearQuadrant(ourQ);
+                cleared = true;
+            }
             if (theirTile != null && theirTile.quadrantColors[theirQ] == theirColor)
+            {
                 theirTile.ClearQuadrant(theirQ);
+                cleared = true;
+            }
+
+            if (!cleared) continue;
 
             ourTile.OnSwap();
             theirTile.OnSwap();

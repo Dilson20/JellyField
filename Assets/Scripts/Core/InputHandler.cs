@@ -43,9 +43,17 @@ public class InputHandler : MonoBehaviour
         }
     }
 
+    Vector2 ScreenToWorld(Vector2 screenPos)
+    {
+        Ray ray = mainCam.ScreenPointToRay(screenPos);
+        float t = (ray.origin.z == 0f) ? 0f : -ray.origin.z / ray.direction.z;
+        Vector3 p = ray.origin + ray.direction * t;
+        return new Vector2(p.x, p.y);
+    }
+
     void OnPointerDown(Vector2 screenPos)
     {
-        Vector2 worldPos = mainCam.ScreenToWorldPoint(screenPos);
+        Vector2 worldPos = ScreenToWorld(screenPos);
         RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero);
 
         if (hit.collider != null)
@@ -60,6 +68,9 @@ public class InputHandler : MonoBehaviour
                 isDragging = true;
 
                 selectedTile.transform.localScale = originalScale * 1.1f;
+                selectedTile.transform.position = new Vector3(
+                    selectedTile.transform.position.x,
+                    selectedTile.transform.position.y, -0.5f);
                 SetSortingOrder(selectedTile, 10);
                 selectedTile.OnPickup();
                 selectedTile.OnDrag();
@@ -70,11 +81,11 @@ public class InputHandler : MonoBehaviour
     void OnPointerDrag(Vector2 screenPos)
     {
         if (selectedTile == null) return;
-        Vector2 worldPos = mainCam.ScreenToWorldPoint(screenPos);
+        Vector2 worldPos = ScreenToWorld(screenPos);
 
         selectedTile.transform.position = Vector3.Lerp(
             selectedTile.transform.position,
-            new Vector3(worldPos.x, worldPos.y, 0),
+            new Vector3(worldPos.x, worldPos.y, -0.5f),
             0.3f);
 
         selectedTile.OnDrag();
@@ -84,7 +95,7 @@ public class InputHandler : MonoBehaviour
     {
         if (!isDragging || selectedTile == null) { ResetInput(); return; }
 
-        Vector2 worldPos = mainCam.ScreenToWorldPoint(screenPos);
+        Vector2 worldPos = ScreenToWorld(screenPos);
 
         selectedTile.transform.localScale = originalScale;
         SetSortingOrder(selectedTile, 0);
@@ -103,8 +114,8 @@ public class InputHandler : MonoBehaviour
 
     void SetSortingOrder(JellyTile tile, int order)
     {
-        foreach (var sr in tile.GetComponentsInChildren<SpriteRenderer>())
-            sr.sortingOrder = order;
+        foreach (var mr in tile.GetComponentsInChildren<MeshRenderer>())
+            mr.sortingOrder = order;
     }
 
     void ResetInput()

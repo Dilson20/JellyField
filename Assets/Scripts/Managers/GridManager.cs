@@ -27,8 +27,19 @@ public class GridManager : MonoBehaviour
     public bool extendTop;
     public bool extendBottom;
 
+    [Header("Middle-Only Sides")]
+    [Tooltip("Left column only spawns tile(s) in the middle row(s).")]
+    public bool middleLeft = false;
+    [Tooltip("Right column only spawns tile(s) in the middle row(s).")]
+    public bool middleRight = false;
+    [Tooltip("Top row only spawns tile(s) in the middle column(s).")]
+    public bool middleTop = false;
+    [Tooltip("Bottom row only spawns tile(s) in the middle column(s).")]
+    public bool middleBottom = false;
+
     private JellyTile[,] grid;
     private bool[,] isBlank;
+    private HashSet<Vector2Int> restrictedCells = new HashSet<Vector2Int>();
 
     // Extension cells live outside [0,columns) x [0,rows) bounds
     private HashSet<Vector2Int> blankExtensions = new HashSet<Vector2Int>();
@@ -39,13 +50,41 @@ public class GridManager : MonoBehaviour
     void Start()
     {
         GenerateGrid();
-        CenterCamera();
     }
 
     IEnumerable<int> MiddleIndices(int count)
     {
         if (count % 2 == 1) { yield return count / 2; }
         else { yield return count / 2 - 1; yield return count / 2; }
+    }
+
+    void BuildRestrictedCells()
+    {
+        restrictedCells.Clear();
+        if (middleLeft && columns >= 1)
+        {
+            var mid = new HashSet<int>(MiddleIndices(rows));
+            for (int y = 0; y < rows; y++)
+                if (!mid.Contains(y)) restrictedCells.Add(new Vector2Int(0, y));
+        }
+        if (middleRight && columns >= 2)
+        {
+            var mid = new HashSet<int>(MiddleIndices(rows));
+            for (int y = 0; y < rows; y++)
+                if (!mid.Contains(y)) restrictedCells.Add(new Vector2Int(columns - 1, y));
+        }
+        if (middleTop && rows >= 2)
+        {
+            var mid = new HashSet<int>(MiddleIndices(columns));
+            for (int x = 0; x < columns; x++)
+                if (!mid.Contains(x)) restrictedCells.Add(new Vector2Int(x, rows - 1));
+        }
+        if (middleBottom && rows >= 1)
+        {
+            var mid = new HashSet<int>(MiddleIndices(columns));
+            for (int x = 0; x < columns; x++)
+                if (!mid.Contains(x)) restrictedCells.Add(new Vector2Int(x, 0));
+        }
     }
 
     List<Vector2Int> GetExtensionCells()
@@ -74,22 +113,22 @@ public class GridManager : MonoBehaviour
         foreach (var ext in GetExtensionCells())
             blankExtensions.Add(ext);
 
+        BuildRestrictedCells();
         SpawnBackgroundTiles();
 
-        int total = columns * rows;
-
-        // Build a list of all cell positions and shuffle it
+        // Build spawnable positions (exclude restricted cells)
         var positions = new List<Vector2Int>();
         for (int x = 0; x < columns; x++)
             for (int y = 0; y < rows; y++)
-                positions.Add(new Vector2Int(x, y));
+                if (!restrictedCells.Contains(new Vector2Int(x, y)))
+                    positions.Add(new Vector2Int(x, y));
 
         Shuffle(positions);
 
-        // Calculate how many tiles to actually fill
-        int maxFromDensity = Mathf.RoundToInt(total * jellyDensity);
-        int forcedBlanks = Mathf.Clamp(minBlankTiles, 0, total);
-        int fillCount = Mathf.Clamp(maxFromDensity, 0, total - forcedBlanks);
+        int spawnableCount = positions.Count;
+        int maxFromDensity = Mathf.RoundToInt(spawnableCount * jellyDensity);
+        int forcedBlanks = Mathf.Clamp(minBlankTiles, 0, spawnableCount);
+        int fillCount = Mathf.Clamp(maxFromDensity, 0, spawnableCount - forcedBlanks);
 
         for (int i = 0; i < positions.Count; i++)
         {
@@ -217,6 +256,7 @@ public class GridManager : MonoBehaviour
             for (int y = 0; y < rows; y++)
             {
                 if (!isBlank[x, y]) continue;
+                if (restrictedCells.Contains(new Vector2Int(x, y))) continue;
                 Vector3 cw = GridToWorld(x, y);
                 float d = Vector2.Distance(releaseWorldPos, new Vector2(cw.x, cw.y));
                 if (d < bestDist) { bestDist = d; bestX = x; bestY = y; }
@@ -284,6 +324,7 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < rows; y++)
             {
+                if (restrictedCells.Contains(new Vector2Int(x, y))) continue;
                 Vector3 pos = GridToWorld(x, y);
                 pos.z = 0.5f;
                 var bg = Instantiate(blankTilePrefab, pos, Quaternion.identity, transform);
@@ -317,7 +358,10 @@ public class GridManager : MonoBehaviour
     {
         for (int x = 0; x < columns; x++)
             for (int y = 0; y < rows; y++)
+            {
+                if (restrictedCells.Contains(new Vector2Int(x, y))) continue;
                 if (isBlank[x, y]) return false;
+            }
         if (blankExtensions.Count > 0) return false;
         return true;
     }

@@ -80,7 +80,6 @@ public class HandManager : MonoBehaviour
         panel.transform.localScale = new Vector3(width, height, 1f);
 
         var sr = panel.AddComponent<SpriteRenderer>();
-        sr.sprite = tilePrefab?.GetComponentInChildren<SpriteRenderer>()?.sprite;
         sr.color = new Color(0.10f, 0.11f, 0.20f, 1f);
         sr.sortingOrder = -2;
     }
@@ -102,12 +101,7 @@ public class HandManager : MonoBehaviour
         var cam = Camera.main;
         float orthoSize = span / 2f + 0.5f + topUIPadding / 2f;
 
-        // Also fit horizontally if grid is wide (extendLeft/extendRight)
-        float effectiveCols = gm.columns + (gm.extendLeft ? 1 : 0) + (gm.extendRight ? 1 : 0);
-        float totalGridWidth = effectiveCols * step - gm.tileSpacing;
-        float sizeFromWidth = totalGridWidth / (2f * cam.aspect) + 0.5f;
-
-        cam.orthographicSize = Mathf.Max(orthoSize, sizeFromWidth);
+        cam.orthographicSize = orthoSize;
         cam.transform.position = new Vector3(0, centerY + cameraYOffset - topUIPadding / 2f, -10f);
     }
 

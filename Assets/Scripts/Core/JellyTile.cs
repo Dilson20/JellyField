@@ -9,7 +9,8 @@ public class JellyTile : MonoBehaviour
     public int gridY;
     public int[] quadrantColors = new int[4];
     private JiggleEffect jiggle;
-    private SpriteRenderer[] quadrantRenderers = new SpriteRenderer[4];
+    private MeshRenderer[] quadrantRenderers = new MeshRenderer[4];
+    private MaterialPropertyBlock[] propBlocks = new MaterialPropertyBlock[4];
     private int[] displayedBy = new int[] { 0, 1, 2, 3 };
     private int[] mergePartner = { -1, -1, -1, -1 };
     [SerializeField] public static float AnimSpeed = 0.4f; // 1=normal, 2=2x faster, 0.5=slower
@@ -36,8 +37,17 @@ public class JellyTile : MonoBehaviour
     void Awake()
     {
         for (int i = 0; i < 4; i++)
-            quadrantRenderers[i] = transform.GetChild(i).GetComponent<SpriteRenderer>();
+        {
+            quadrantRenderers[i] = transform.GetChild(i).GetComponent<MeshRenderer>();
+            propBlocks[i] = new MaterialPropertyBlock();
+        }
         jiggle = gameObject.AddComponent<JiggleEffect>();
+    }
+
+    void SetColor(int index, Color color)
+    {
+        propBlocks[index].SetColor("_BaseColor", color);
+        quadrantRenderers[index].SetPropertyBlock(propBlocks[index]);
     }
 
     public void OnPickup()
@@ -132,7 +142,7 @@ public class JellyTile : MonoBehaviour
             case 2: t.localPosition = new Vector3(-0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
             case 3: t.localPosition = new Vector3(0.25f, 0f, 0); t.localScale = new Vector3(0.48f, 0.96f, 1); break;
         }
-        quadrantRenderers[a].color = JellyColors[color];
+        SetColor(a, JellyColors[color]);
         quadrantRenderers[a].gameObject.SetActive(true);
     }
 
@@ -211,7 +221,7 @@ public class JellyTile : MonoBehaviour
                 default: targetPos = new Vector3(0.25f, 0f, 0); targetScale = new Vector3(0.48f, 0.96f, 1); break;
             }
             quadrantRenderers[other].transform.localPosition = targetPos;
-            quadrantRenderers[other].color = JellyColors[quadrantColors[other]];
+            SetColor(other, JellyColors[quadrantColors[other]]);
             AnimateExpandIn(other, targetScale);
             break;
         }
@@ -247,7 +257,7 @@ public class JellyTile : MonoBehaviour
         for (int i = 0; i < 4; i++)
         {
             quadrantColors[i] = picked[i];
-            quadrantRenderers[i].color = JellyColors[picked[i]];
+            SetColor(i, JellyColors[picked[i]]);
             quadrantRenderers[i].gameObject.SetActive(true);
         }
     }
@@ -271,7 +281,7 @@ public class JellyTile : MonoBehaviour
     public void SetQuadrantColor(int quadrant, int colorID)
     {
         quadrantColors[quadrant] = colorID;
-        quadrantRenderers[quadrant].color = JellyColors[colorID];
+        SetColor(quadrant, JellyColors[colorID]);
     }
 
     public bool IsFullyEmpty()
@@ -332,7 +342,7 @@ public class JellyTile : MonoBehaviour
             if (i > 0) quadrantRenderers[i].gameObject.SetActive(false);
         }
         quadrantRenderers[0].transform.localPosition = Vector3.zero;
-        quadrantRenderers[0].color = JellyColors[color];
+        SetColor(0, JellyColors[color]);
         quadrantRenderers[0].gameObject.SetActive(true);
         AnimateFullExpand();
     }
