@@ -50,6 +50,12 @@ public class JellyTile : MonoBehaviour
         quadrantRenderers[index].SetPropertyBlock(propBlocks[index]);
     }
 
+    public void SetTileScale(float scale)
+    {
+        transform.localScale = new Vector3(scale, scale, 1f);
+        jiggle?.SetBaseScale(transform.localScale);
+    }
+
     public void OnPickup()
     {
         jiggle?.PlayPickup();

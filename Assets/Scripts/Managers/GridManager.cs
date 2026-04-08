@@ -49,7 +49,37 @@ public class GridManager : MonoBehaviour
 
     void Start()
     {
+        FitTileSizeToScreen();
         GenerateGrid();
+    }
+
+    // Tự tính tileSize để grid vừa khít màn hình theo aspect ratio
+    void FitTileSizeToScreen()
+    {
+        float aspect = Screen.width / (float)Screen.height;
+        float fill = 0.92f;
+
+        // Ước tính số row tương đương mà camera cần hiển thị
+        // (grid rows + ~2 rows cho hand area + padding)
+        float totalRows = rows + 2f;
+
+        // Từ HandManager.AdjustCamera: orthoSize ≈ totalRows*step/2 + C
+        // worldWidth = 2 * orthoSize * aspect
+        // Giải ra step để columns*step = worldWidth * fill:
+        // columns * step = (totalRows * step + C) * aspect * fill
+        // step * (columns - totalRows * aspect * fill) = C * aspect * fill
+        // step = C * aspect * fill / (columns - totalRows * aspect * fill)
+        const float C = 3.3f; // ≈ topUIPadding + extraPadding + margins quy đổi sang world units
+
+        float denom = columns - totalRows * aspect * fill;
+        if (denom <= 0.1f)
+            return; // màn hình quá rộng (landscape) — giữ nguyên giá trị Inspector
+
+        float step = C * aspect * fill / denom;
+        tileSize = Mathf.Clamp(step - tileSpacing, 0.3f, 3f);
+
+        // Scale tileSpacing theo tileSize để giữ tỉ lệ gap nhất quán
+        tileSpacing = tileSize * 0.055f;
     }
 
     IEnumerable<int> MiddleIndices(int count)
@@ -141,6 +171,7 @@ public class GridManager : MonoBehaviour
                 Vector3 worldPos = GridToWorld(x, y);
                 var go = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
                 var tile = go.GetComponent<JellyTile>();
+                tile.SetTileScale(tileSize);
                 tile.Init(x, y);
                 tile.isInteractable = false;
                 grid[x, y] = tile;

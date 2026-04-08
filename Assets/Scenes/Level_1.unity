@@ -3069,7 +3069,7 @@ MonoBehaviour:
   tileSpacing: 0.05
   tilePrefab: {fileID: 3503829104508947765, guid: 88c72047ed3b6da43b0d0832cfd2108d, type: 3}
   blankTilePrefab: {fileID: 6109847864636725067, guid: 699ef02ffb8c8514b8fb768d6a0bd479, type: 3}
-  gridOffsetY: 2
+  gridOffsetY: 0
   extendLeft: 0
   extendRight: 0
   extendTop: 0

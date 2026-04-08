@@ -60,8 +60,8 @@ public class JiggleEffect : MonoBehaviour
         while (true)
         {
             t += Time.deltaTime * 8f;
-            float wobbleX = Mathf.Sin(t) * 0.08f;
-            float wobbleY = Mathf.Cos(t * 1.3f) * 0.08f;
+            float wobbleX = Mathf.Sin(t) * 0.06f;
+            float wobbleY = Mathf.Cos(t * 1.3f) * 0.06f;
             transform.localScale = new Vector3(
                 baseScale.x * (1f + wobbleX),
                 baseScale.y * (1f + wobbleY),
@@ -93,8 +93,8 @@ public class JiggleEffect : MonoBehaviour
         while (t < 1f)
         {
             t += Time.deltaTime / 0.12f;
-            float squash = 1f + Mathf.Sin(t * Mathf.PI) * 0.18f;
-            float stretch = 1f - Mathf.Sin(t * Mathf.PI) * 0.10f;
+            float squash = 1f + Mathf.Sin(t * Mathf.PI) * 0.07f;
+            float stretch = 1f - Mathf.Sin(t * Mathf.PI) * 0.05f;
             transform.localScale = new Vector3(
                 baseScale.x * squash,
                 baseScale.y * stretch,
@@ -114,7 +114,7 @@ public class JiggleEffect : MonoBehaviour
             t += Time.deltaTime;
             float progress = t / duration;
             float wobble = Mathf.Sin(progress * Mathf.PI * 4f)
-                           * (1f - progress) * 0.15f;
+                           * (1f - progress) * 0.06f;
             transform.localScale = new Vector3(
                 baseScale.x * (1f + wobble),
                 baseScale.y * (1f - wobble),
@@ -134,7 +134,7 @@ public class JiggleEffect : MonoBehaviour
             t += Time.deltaTime;
             float progress = t / duration;
             float squeeze = Mathf.Sin(progress * Mathf.PI * 3f)
-                            * (1f - progress) * 0.12f;
+                            * (1f - progress) * 0.06f;
             transform.localScale = new Vector3(
                 baseScale.x * (1f - squeeze),
                 baseScale.y * (1f + squeeze),

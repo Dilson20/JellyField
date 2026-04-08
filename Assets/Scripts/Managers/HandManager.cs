@@ -66,6 +66,7 @@ public class HandManager : MonoBehaviour
         go.transform.SetParent(transform);
         go.name = $"HandTile_{i}";
         var tile = go.GetComponent<JellyTile>();
+        tile.SetTileScale(GridManager.Instance.tileSize);
         tile.Init(-1, -1);
         tile.isInteractable = true;
         tile.handSlotIndex = i;

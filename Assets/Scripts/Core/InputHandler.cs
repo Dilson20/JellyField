@@ -114,8 +114,8 @@ public class InputHandler : MonoBehaviour
 
     void SetSortingOrder(JellyTile tile, int order)
     {
-        foreach (var mr in tile.GetComponentsInChildren<MeshRenderer>())
-            mr.sortingOrder = order;
+        foreach (var sr in tile.GetComponentsInChildren<SpriteRenderer>())
+            sr.sortingOrder = order;
     }
 
     void ResetInput()
